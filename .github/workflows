@@ -1,0 +1,15 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: source venv/bin/activate
+      - run: python3.9 -m unittest discover resources/python/test/unit
+      - run: python3.9 -m unittest discover resources/python/test/integration
+      - run: make
