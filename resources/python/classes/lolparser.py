@@ -224,13 +224,9 @@ class LolParser():
                 A list of names stored in the league_users table
         """
 
-        summoner_names = []
         league_users = self.our_db.session.query(LeagueUsers).all()
+        return [user.summoner_name for user in league_users]
 
-        for user in league_users:
-            summoner_names.append(user.summoner_name)
-
-        return summoner_names
 
     def store_json_data(self, match: int, json_formatted_string: str):
         """ Stores the json data for a single match into the json_data table.
@@ -572,3 +568,35 @@ class LolParser():
             first_blood_assist = 0
 
         return int(first_blood_kill), int(first_blood_assist)
+
+    def get_account_id(self, account_name: str) -> str:
+        """ Gets the account ID we have for this username that we have stored in the league
+            users table.
+
+            Args:
+                account_name: the account name we're getting the puuid for
+
+            Returns:
+                The puuid associated with this account from the database.
+        """
+
+        user_row  = self.our_db.session.query(LeagueUsers).filter_by(\
+                summoner_name=account_name).first()
+
+        #This will change from riot_id to puuid soon.
+        return user_row.riot_id
+
+    def store_puuid(self, account_name: str, puuid: str):
+        """ Stores a puuid into an league user row for a particiular account_name
+
+            Args:
+                account_name: the account name we're storing the puuid for
+                puuid:        the puuid we're storing.
+
+        """
+        league_user = self.our_db.session.query(LeagueUsers).filter_by(\
+                summoner_name=account_name).first()
+
+        league_user.puuid = puuid
+
+        self.our_db.session.commit()

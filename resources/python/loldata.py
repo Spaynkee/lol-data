@@ -105,7 +105,7 @@ class LolData():
         """
         self.logger.log_info(f"Updating {acc.account_name}'s matches in match_data")
 
-        acc.account_id = self.gatherer.get_account_id(acc.account_name)
+        acc.account_id = self.parser.get_account_id(acc.account_name)
 
         # Gets all the recent games the account has played
         recent_player_matches = self.gatherer.get_match_reference_dto(acc.account_id)

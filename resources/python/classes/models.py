@@ -153,17 +153,20 @@ class LeagueUsers(Base):
             id              (int): Primary Key; the id for each user.
             summoner_name   (str): The summoner name of the user
             riot_id         (str): The unique riot id for the user.
+            puuid           (str): Puuid is the new form of riot id.
 
     """
     __tablename__ = "league_users"
     id = Column(Integer, primary_key=True)
     summoner_name = Column(String(30))
     riot_id = Column(String(400))
+    puuid = Column(String(400))
 
-    def __init__(self, id=None, summoner_name = None, riot_id = None):
+    def __init__(self, id=None, summoner_name = None, riot_id = None, puuid = None):
         self.id = id
         self.summoner_name = summoner_name
         self.riot_id = riot_id
+        self.puuid = puuid
 
 class ScriptRuns(Base):
     """ ScriptRuns is the model for our script_runs table.

@@ -23,7 +23,6 @@ def main():
     """
 
     # we need to drop all the existing tables so we can re populate.
-
     config = LolConfig()
     our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
 
@@ -50,14 +49,13 @@ def main():
     users = ['Spaynkee', 'Dumat', 'Archemlis', 'Stylus Crude', 'dantheninja6156', 'Csqward']
     for user in users:
         user_data = get_player_data(user)
-        our_db.session.add_all([MatchData(**match) for match in user_data])
+        our_db.session.add_all([MatchData(**match) for match in remove_win(user_data)])
 
     print("getting league users")
     #league_users table
     my_league_user_data = requests.get("http://paulzplace.asuscomm.com/api/get_league_users")
     league_users = json.loads(my_league_user_data.text)
     our_db.session.add_all([LeagueUsers(**user) for user in league_users])
-
 
     print("getting champions")
     #champions table
@@ -77,6 +75,27 @@ def main():
     json_data = json.loads(my_json_data_data.text)
     our_db.session.add_all([JsonData(**json) for json in json_data])
     our_db.session.commit()
+
+def remove_win(user_data_list):
+    """ our get_player_data api endpoint returns a 'win' value for ease of use, but this doesn't
+        play nicely with our model set up, as we have to include 'win' as a match_data
+        module param (which isn't used)
+
+        This function removes the win column from the json data we get back so we can use
+        add_all
+
+        Args:
+            user_data_list (list): a list of all of a players games
+
+        Returns:
+            an updated list of all of a players games.
+
+    """
+    for game in user_data_list:
+        del game['win']
+
+    return user_data_list
+
 
 def get_player_data(player: str) -> list:
     """

@@ -125,29 +125,6 @@ class LolGather():
 
         return ""
 
-    def get_account_id(self, account_name: str) -> str:
-        """ Hits the riot API and gets our account_id based on account_name
-
-            Args:
-                account_name: the account name we're getting the account_id for
-
-            Returns:
-                The account_id associated with this account from riot
-        """
-        try:
-            account_response = requests.get(''.join([self.base_summoner_url,\
-                    self.account_name_url, account_name, "?api_key=", self.config.api_key]))
-            account_response.raise_for_status()
-            account_data = json.loads(account_response.text)
-            return account_data['accountId']
-        except requests.exceptions.RequestException as exc:
-            if exc.response.status_code == 403:
-                self.logger.log_critical("Api key is probably expired")
-
-            self.logger.log_critical("get_user_id broke")
-
-        return ""
-
     @staticmethod
     def get_unstored_match_ids(prev_matches: list, new_matches: list,\
             match_types: list) -> list:
@@ -172,3 +149,26 @@ class LolGather():
                         unstored_match_ids.append(match['gameId'])
 
         return unstored_match_ids
+
+    def get_puuid(self, account_name: str) -> str:
+        """ Gets the puuid for this account name from riot.
+
+            Args:
+                account_name: the account name we're getting the account_id for
+
+            Returns:
+                The account_id associated with this account from riot
+        """
+        try:
+            account_response = requests.get(''.join([self.base_summoner_url,\
+                    self.account_name_url, account_name, "?api_key=", self.config.api_key]))
+            account_response.raise_for_status()
+            account_data = json.loads(account_response.text)
+            return account_data['puuid']
+        except requests.exceptions.RequestException as exc:
+            if exc.response.status_code == 403:
+                self.logger.log_critical("Api key is probably expired")
+
+            self.logger.log_critical("get_user_id broke")
+
+        return ""
