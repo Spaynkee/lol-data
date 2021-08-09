@@ -32,9 +32,8 @@ class LolGather():
     def __init__(self, max_game_index=200):
         self.base_summoner_url = "https://na1.api.riotgames.com/lol/summoner/v4/"
         self.account_name_url = "summoners/by-name/"
-        self._base_match_url = "https://na1.api.riotgames.com/lol/match/v4/"
-        self._matches_url = "matchlists/by-account/"
-        self._match_url = "matches/"
+        self._base_match_url = "https://americas.api.riotgames.com/lol/match/v5/matches/"
+
         self.max_game_index = max_game_index
 
         self.lolparser = LolParser()
@@ -57,14 +56,18 @@ class LolGather():
         game_index = 0
         player_matches = []
 
+        if self.max_game_index <= 100:
+            index_increment = self.max_game_index
+        else:
+            index_increment = 100
+
         # keeps looping until we get to the max_game_index
         # a higher max game index makes us check further back in time.
         while game_index < self.max_game_index:
             try:
-                player_matches_response = requests.get(''.join([self._base_match_url,\
-                        self._matches_url, account_id, "?beginIndex=", str(game_index),\
-                        "&endIndex=", str(game_index+100),\
-                        "&api_key=", self.config.api_key]))
+                player_matches_response = requests.get(''.join([self._base_match_url,"by-puuid/",\
+                        account_id, "/ids?start=", str(game_index),\
+                        "&count=", str(index_increment), "&api_key=", self.config.api_key]))
 
                 player_matches_response.raise_for_status()
                 player_matches_response_dict = json.loads(player_matches_response.text)
@@ -73,7 +76,9 @@ class LolGather():
                     break
 
                 player_matches.append(player_matches_response_dict)
+
                 game_index += 100
+
             except requests.exceptions.RequestException as exc:
                 self.logger.log_critical("Get_account_info broke")
                 if exc.response.status_code == 403:
@@ -107,7 +112,7 @@ class LolGather():
 
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
-            matches_response = requests.get(''.join([self._base_match_url, self._match_url,\
+            matches_response = requests.get(''.join([self._base_match_url,\
                     str(match_id), "?api_key=", self.config.api_key]))
 
             matches_response.raise_for_status()
@@ -159,6 +164,7 @@ class LolGather():
             Returns:
                 The account_id associated with this account from riot
         """
+
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
                     self.account_name_url, account_name, "?api_key=", self.config.api_key]))

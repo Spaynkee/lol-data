@@ -5,6 +5,8 @@ lint:
 	pylint resources/python/get_champ_card_data.py
 	pylint resources/python/assert_db.py
 	pylint resources/python/update_db_from_api.py
+	pylint resources/python/test/unit/test_lolparser.py
+	pylint resources/python/test/unit/test_lolgather.py
 
 checklist: lint
 .PHONY: lint
