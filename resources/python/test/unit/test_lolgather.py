@@ -11,6 +11,7 @@ python -m unittest discover resources/python/test
 
 """
 
+#pylint: disable=import-error #False positive.
 import unittest
 from unittest.mock import patch
 from resources.python.classes.lolgather import LolGather
@@ -70,7 +71,7 @@ class TestLolGatherGetPuuid(unittest.TestCase):
 
     """
 
-    def setUp(self): 
+    def setUp(self):
         """ set up method for our test cases. This runs for every test case. Instantiates the
             config object so we can get our api key.
 

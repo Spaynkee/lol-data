@@ -10,6 +10,7 @@ Don't forget -- Run this from the root folder /lol-data and use the command
 python -m unittest resources.python.test.unit.test_lolparser
 """
 
+#pylint: disable=import-error #False positive.
 import unittest
 import json
 from unittest.mock import Mock, MagicMock
