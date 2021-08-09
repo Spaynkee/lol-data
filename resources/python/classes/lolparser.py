@@ -583,8 +583,7 @@ class LolParser():
         user_row  = self.our_db.session.query(LeagueUsers).filter_by(\
                 summoner_name=account_name).first()
 
-        #This will change from riot_id to puuid soon.
-        return user_row.riot_id
+        return user_row.puuid
 
     def store_puuid(self, account_name: str, puuid: str):
         """ Stores a puuid into an league user row for a particiular account_name

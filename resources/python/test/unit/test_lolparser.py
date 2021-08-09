@@ -12,7 +12,6 @@ python -m unittest resources.python.test.unit.test_lolparser
 
 import unittest
 import json
-from collections import defaultdict
 from unittest.mock import Mock, MagicMock
 from resources.python.classes.lolparser import LolParser
 
@@ -140,7 +139,6 @@ class TestLolParserSelectPreviousMatchDataRows(unittest.TestCase):
         parser = LolParser()
         parser.our_db = mock_db_class
 
-        # Do I use an actual string here? What to do...
         parser.select_previous_match_data_rows(Mock())
 
         mock_db_class.session.query.assert_called_once()
@@ -218,7 +216,7 @@ class TestLolParserInsertMatchDataRow(unittest.TestCase):
 
     def test_number_of_function_calls(self):
         """ tests that the number of functions called is exactly what we expected."""
-        
+
         mock_dict = MagicMock()
         mock_db = MagicMock()
 
@@ -293,7 +291,7 @@ class TestLolParserInsertTeamDataRow(unittest.TestCase):
         mock_get_start_time_and_duration.assert_called_once()
 
     def test_with_data(self):
-        """ tests that data is parsed correctly. 
+        """ tests that data is parsed correctly.
 
             This is a somewhat weird test, as it doesn't test anything returned by other functions
             function. This is somewhat by design as this is a unit test, and I'll have the same
@@ -302,8 +300,8 @@ class TestLolParserInsertTeamDataRow(unittest.TestCase):
             I may still remove this test at some point after I write the integration test.
         """
 
-        test_file = open("resources/python/test/test_statics/1", "r")
-        match_dict = json.loads(test_file.read())
+        with open("resources/python/test/test_statics/1", "r") as test_file:
+            match_dict = json.loads(test_file.read())
 
         mock_db = MagicMock()
 
@@ -333,6 +331,45 @@ class TestLolParserInsertTeamDataRow(unittest.TestCase):
         self.assertEqual(team_data_obj.enemy_rift_herald_kills, 2)
 
         test_file.close()
+
+class TestLolParserStorePuuid(unittest.TestCase):
+    """ Contains all the test cases for store_puuid
+    """
+
+    @staticmethod
+    def test_store_puuid():
+        """ Asserts that a puuid is stored. """
+
+        mock_db_class = MagicMock()
+
+        parser = LolParser()
+        parser.our_db = mock_db_class
+
+        parser.store_puuid(Mock(), Mock())
+
+        mock_db_class.session.query.assert_called_once()
+        mock_db_class.session.query().filter_by.assert_called_once()
+        mock_db_class.session.query().filter_by().first.assert_called_once()
+        mock_db_class.session.commit.assert_called_once()
+
+class TestLolParserGetAccountId(unittest.TestCase):
+    """ Contains all the test cases for get_account_id
+    """
+
+    @staticmethod
+    def test_get_account_id():
+        """ Tests getting an account id out of the database."""
+
+        mock_db_class = MagicMock()
+
+        parser = LolParser()
+        parser.our_db = mock_db_class
+
+        parser.get_account_id(Mock())
+
+        mock_db_class.session.query.assert_called_once()
+        mock_db_class.session.query().filter_by.assert_called_once()
+        mock_db_class.session.query().filter_by().first.assert_called_once()
 
 if __name__ == "__main__":
     unittest.main()
