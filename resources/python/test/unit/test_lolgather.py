@@ -26,8 +26,9 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
         """
         self.config = LolConfig()
 
+    @patch('json.loads')
     @patch('requests.get')
-    def test_max_game_index_default(self, mock_requests):
+    def test_max_game_index_default(self, mock_requests, mock_json):
         """ Tests that our function works with max_game_index = 200
 
         """
@@ -35,6 +36,7 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
         gather = LolGather()
         gather.get_match_reference_dto("123")
         self.assertEqual(mock_requests.call_count, 2)
+        self.assertEqual(mock_json.call_count, 2)
 
 
         self.assertEqual(mock_requests.call_args_list[0].args[0],\
@@ -46,8 +48,10 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
                 "https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/"+\
                 f"123/ids?start=100&count=100&api_key={self.config.api_key}")
 
+
+    @patch('json.loads')
     @patch('requests.get')
-    def test_max_game_index_fifty(self, mock_requests):
+    def test_max_game_index_fifty(self, mock_requests, mock_json):
         """ Tests that our function works with max_game_index = 50
 
         """
@@ -55,6 +59,7 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
         gather = LolGather(50)
         gather.get_match_reference_dto("123")
         self.assertEqual(mock_requests.call_count, 1)
+        self.assertEqual(mock_json.call_count, 1)
 
         self.assertEqual(mock_requests.call_args_list[0].args[0],\
                 "https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/"+\
@@ -65,15 +70,16 @@ class TestLolGatherGetPuuid(unittest.TestCase):
 
     """
 
-    def setUp(self):
+    def setUp(self): 
         """ set up method for our test cases. This runs for every test case. Instantiates the
             config object so we can get our api key.
 
         """
         self.config = LolConfig()
 
+    @patch('json.loads')
     @patch('requests.get')
-    def test_get_puuid(self, mock_requests):
+    def test_get_puuid(self, mock_requests, mock_json):
         """ Tests that we hit the correct endpoint for getting a players riot id.
 
         """
@@ -81,6 +87,8 @@ class TestLolGatherGetPuuid(unittest.TestCase):
         gather = LolGather(100)
         gather.get_puuid("spaynkee")
         mock_requests.assert_called_once()
+
+        mock_json.assert_called_once()
 
         self.assertEqual(mock_requests.call_args.args[0],\
             "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"+\
@@ -90,7 +98,6 @@ class TestLolGatherGetMatchData(unittest.TestCase):
     """ Contains all the test cases for get_match_data
 
     """
-
     def setUp(self):
         """ set up method for our test cases. This runs for every test case. Instantiates the
             config object so we can get our api key.
@@ -98,8 +105,9 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         """
         self.config = LolConfig()
 
+    @patch('json.loads')
     @patch('requests.get')
-    def test_get_match_data(self, mock_requests):
+    def test_get_match_data(self, mock_requests, mock_json):
         """ Tests that we hit the correct endpoint for getting a players riot id.
 
         """
@@ -107,6 +115,7 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         gather = LolGather(100)
         gather.get_match_data("123")
         mock_requests.assert_called_once()
+        mock_json.assert_called_once()
 
         self.assertEqual(mock_requests.call_args.args[0],\
             "https://americas.api.riotgames.com/lol/match/v5/matches/123"+\
