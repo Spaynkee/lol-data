@@ -4,6 +4,7 @@ from collections import defaultdict
 from unittest.mock import Mock, MagicMock
 from resources.python.classes.lolparser import LolParser
 
+# This is being ignored in the build for now, as it needs more significant changes.
 class TestTeamDataInserted(unittest.TestCase):
     """ Contains all the test cases for inserting team data.
     """
