@@ -11,8 +11,8 @@ python -m unittest resources.python.test.unit.test_lolparser
 """
 
 #pylint: disable=import-error #False positive.
+#pylint: disable=no-self-use # Gotta keep self for unittest
 import unittest
-import json
 from unittest.mock import Mock, MagicMock
 from resources.python.classes.lolparser import LolParser
 
@@ -226,11 +226,12 @@ class TestLolParserInsertMatchDataRow(unittest.TestCase):
         mock_get_champ_name = MagicMock()
         mock_get_first_blood_kill_assist = MagicMock(return_value=[None,None])
         mock_get_role = MagicMock()
-        mock_get_gold_cs_xp_delta = MagicMock(return_value=[None, None, None])
-        mock_get_enemy_champion = MagicMock()
         mock_get_perks = MagicMock()
         mock_get_items = MagicMock()
-
+        mock_get_enemy_champ = MagicMock(return_value=[None,None])
+        mock_get_gold_per_minute = MagicMock()
+        mock_get_cs_per_minute = MagicMock()
+        mock_get_xp_per_minute = MagicMock()
 
         parser = LolParser()
 
@@ -239,23 +240,29 @@ class TestLolParserInsertMatchDataRow(unittest.TestCase):
         parser.get_champ_name = mock_get_champ_name
         parser.get_first_blood_kill_assist = mock_get_first_blood_kill_assist
         parser.get_role = mock_get_role
-        parser.get_gold_cs_xp_delta = mock_get_gold_cs_xp_delta
-        parser.get_enemy_champ = mock_get_enemy_champion
+        parser.get_enemy_champ = mock_get_enemy_champ
         parser.get_perks = mock_get_perks
         parser.get_items = mock_get_items
+        parser.get_enemy_champ = mock_get_enemy_champ
+        parser.get_gold_per_minute = mock_get_gold_per_minute
+        parser.get_cs_per_minute = mock_get_cs_per_minute
+        parser.get_xp_per_minute = mock_get_xp_per_minute
 
         parser.insert_match_data_row(mock_dict, "test", Mock())
 
         # make sure our functions are called the correct number of times.
         mock_db.session.add.assert_called_once()
         mock_get_participant_index.assert_called_once()
-        self.assertEqual(mock_get_champ_name.call_count, 2)
+        mock_get_champ_name.assert_called_once()
         mock_get_first_blood_kill_assist.assert_called_once()
         mock_get_role.assert_called_once()
-        mock_get_gold_cs_xp_delta.assert_called_once()
-        mock_get_enemy_champion.assert_called_once()
+        mock_get_enemy_champ.assert_called_once()
         mock_get_perks.assert_called_once()
         mock_get_items.assert_called_once()
+        mock_get_enemy_champ.assert_called_once()
+        mock_get_gold_per_minute.assert_called_once()
+        mock_get_cs_per_minute.assert_called_once()
+        mock_get_xp_per_minute.assert_called_once()
 
 
 
@@ -290,48 +297,6 @@ class TestLolParserInsertTeamDataRow(unittest.TestCase):
         self.assertEqual(mock_get_team_bans.call_count, 2)
         mock_get_allies_and_enemies.assert_called_once()
         mock_get_start_time_and_duration.assert_called_once()
-
-    def test_with_data(self):
-        """ tests that data is parsed correctly.
-
-            This is a somewhat weird test, as it doesn't test anything returned by other functions
-            function. This is somewhat by design as this is a unit test, and I'll have the same
-            test but more robust as an integration test.
-
-            I may still remove this test at some point after I write the integration test.
-        """
-
-        with open("resources/python/test/test_statics/1", "r") as test_file:
-            match_dict = json.loads(test_file.read())
-
-        mock_db = MagicMock()
-
-        parser = LolParser()
-
-        parser.our_db = mock_db
-
-        parser.insert_team_data_row(match_dict, "Spaynkee",\
-                "OIesQl3aYp9Mlfi7OgKFXp1i2brmVO0QUMSE0adgol7L2g")
-
-        team_data_obj = mock_db.session.add.call_args.args[0]
-
-        self.assertEqual(team_data_obj.participants, "Spaynkee")
-        self.assertEqual(team_data_obj.win, "Fail")
-        self.assertEqual(team_data_obj.first_blood, 0)
-        self.assertEqual(team_data_obj.first_baron, 0)
-        self.assertEqual(team_data_obj.first_tower, 0)
-        self.assertEqual(team_data_obj.first_rift_herald, 0)
-        self.assertEqual(team_data_obj.ally_rift_herald_kills, 0)
-        self.assertEqual(team_data_obj.first_dragon, 0)
-        self.assertEqual(team_data_obj.ally_dragon_kills, 2)
-        self.assertEqual(team_data_obj.first_inhib, 0)
-        self.assertEqual(team_data_obj.inhib_kills, 0)
-        self.assertEqual(team_data_obj.game_version, '11.13.382.1241')
-        self.assertEqual(team_data_obj.match_id, 3959945080)
-        self.assertEqual(team_data_obj.enemy_dragon_kills, 4)
-        self.assertEqual(team_data_obj.enemy_rift_herald_kills, 2)
-
-        test_file.close()
 
 class TestLolParserStorePuuid(unittest.TestCase):
     """ Contains all the test cases for store_puuid

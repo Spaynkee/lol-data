@@ -10,7 +10,8 @@ from datetime import datetime as date
 from .lolconfig import LolConfig
 from .loldb import LolDB
 from .lollogger import LolLogger
-from .models import TeamData, MatchData, JsonData, Champions, Items, ScriptRuns, LeagueUsers
+from .models import TeamData, MatchData, JsonData, Champions, Items, ScriptRuns, LeagueUsers,\
+        JsonTimeline
 
 #pylint: disable=too-many-public-methods # No way around this one right now. Maybe a refactor later
 class LolParser():
@@ -79,7 +80,9 @@ class LolParser():
 
         return previous_player_matches
 
-    def insert_match_data_row(self, match_data: dict, account_name: str, account_id: str):
+    def insert_match_data_row(self, match_data: dict, account_name: str,\
+            account_id: str):
+
         """ Parses through a large dict and inserts data into the match_data table.
 
             Args:
@@ -90,8 +93,9 @@ class LolParser():
         """
         # This object will store all the data we intend to save.
         match_obj = MatchData()
+        match_data = match_data['info']
 
-        participant_index = self.get_participant_index(match_data['participantIdentities'],\
+        participant_index = self.get_participant_index(match_data['participants'],\
                 account_id)
 
         match_obj.match_id = match_data['gameId']
@@ -100,37 +104,36 @@ class LolParser():
         participant = match_data['participants'][participant_index]
         match_obj.champion = participant['championId']
 
-        stats = participant['stats']
-
-        match_obj.kills = stats['kills']
-        match_obj.deaths = stats['deaths']
-        match_obj.assists = stats['assists']
-        match_obj.wards_placed = stats['wardsPlaced']
-        match_obj.damage_to_champs = stats['totalDamageDealtToChampions']
-        match_obj.damage_to_turrets = stats['damageDealtToTurrets']
-        match_obj.vision_wards_bought = stats['visionWardsBoughtInGame']
-        match_obj.wards_killed = stats['wardsKilled']
+        match_obj.kills = participant['kills']
+        match_obj.deaths = participant['deaths']
+        match_obj.assists = participant['assists']
+        match_obj.wards_placed = participant['wardsPlaced']
+        match_obj.damage_to_champs = participant['totalDamageDealtToChampions']
+        match_obj.damage_to_turrets = participant['damageDealtToTurrets']
+        match_obj.vision_wards_bought = participant['visionWardsBoughtInGame']
+        match_obj.wards_killed = participant['wardsKilled']
 
         match_obj.champion_name = self.get_champ_name(participant['championId'])
 
         match_obj.first_blood, match_obj.first_blood_assist =\
-                self.get_first_blood_kill_assist(stats)
+                self.get_first_blood_kill_assist(participant)
 
-        timeline = participant['timeline']
-
-        role = self.get_role(timeline)
+        role = self.get_role(participant)
 
         match_obj.role = role
-        match_obj.gold_per_minute, match_obj.creeps_per_minute, match_obj.xp_per_minute = \
-               self.get_gold_cs_xp_delta(timeline)
 
-        match_obj.enemy_champion = self.get_enemy_champ(role, participant_index,\
-                match_data['participants'])
+        match_obj.gold_per_minute = self.get_gold_per_minute(participant,\
+                match_data['gameDuration'])
+        match_obj.creeps_per_minute = self.get_cs_per_minute(participant,\
+                match_data['gameDuration'])
+        match_obj.xp_per_minute = self.get_xp_per_minute(participant,\
+                match_data['gameDuration'])
 
-        match_obj.enemy_champion_name = self.get_champ_name(match_obj.enemy_champion)
+        match_obj.enemy_champion, match_obj.enemy_champion_name  = self.get_enemy_champ(role,\
+                participant_index, match_data['participants'])
 
-        match_obj.items = self.get_items(stats)
-        match_obj.perks = self.get_perks(stats)
+        match_obj.items = self.get_items(participant)
+        match_obj.perks = self.get_perks(participant)
 
         self.our_db.session.add(match_obj)
         self.our_db.session.commit()
@@ -149,24 +152,35 @@ class LolParser():
         team_data, enemy_team_data, team_id = self.get_team_data(match_data, account_id)
         team_obj = TeamData()
 
+        match_data = match_data['info']
         # get some team information.
         team_obj.participants = account_name
-        team_obj.win = team_data['win']
-        team_obj.first_blood = team_data['firstBlood']
-        team_obj.first_baron = team_data['firstBaron']
-        team_obj.first_tower = team_data['firstTower']
-        team_obj.first_rift_herald = team_data['firstRiftHerald']
-        team_obj.ally_rift_herald_kills = team_data['riftHeraldKills']
-        team_obj.first_dragon = team_data['firstDragon']
-        team_obj.ally_dragon_kills = team_data['dragonKills']
-        team_obj.first_inhib = team_data['firstInhibitor']
-        team_obj.inhib_kills = team_data['inhibitorKills']
+
+        if team_data['win']:
+            team_obj.win = 'Win'
+        else:
+            team_obj.win = 'Fail'
+
+        objectives = team_data['objectives']
+
+        team_obj.first_blood = objectives['champion']['first']
+        team_obj.first_baron = objectives['baron']['first']
+        team_obj.first_tower = objectives['tower']['first']
+        team_obj.first_rift_herald = objectives['riftHerald']['first']
+        team_obj.first_dragon = objectives['dragon']['first']
+        team_obj.first_inhib = objectives['inhibitor']['first']
+
+        team_obj.ally_rift_herald_kills = objectives['riftHerald']['kills']
+        team_obj.ally_dragon_kills = objectives['dragon']['kills']
+        team_obj.inhib_kills = objectives['inhibitor']['kills']
+
         team_obj.game_version = match_data['gameVersion']
         team_obj.match_id = match_data['gameId']
 
         # sometimes we need enemy info too.
-        team_obj.enemy_dragon_kills = enemy_team_data['dragonKills']
-        team_obj.enemy_rift_herald_kills = enemy_team_data['riftHeraldKills']
+        enemy_objectives = enemy_team_data['objectives']
+        team_obj.enemy_dragon_kills = enemy_objectives['dragon']['kills']
+        team_obj.enemy_rift_herald_kills = enemy_objectives['riftHerald']['kills']
 
         team_obj.bans = self.get_team_bans(team_data['bans'])
         team_obj.enemy_bans = self.get_team_bans(enemy_team_data['bans'])
@@ -199,19 +213,19 @@ class LolParser():
         self.our_db.session.commit()
 
     @staticmethod
-    def get_participant_index(participant_identities: dict, account_id: str) -> int:
-        """ Gets a participants index based on their account_id
+    def get_participant_index(participant_identities: dict, puuid: str) -> int:
+        """ Gets a participants index based on their puuid
 
             Args:
                 participant_identities: a dictionary containing all 10 players identities
-                account_id: the account id of the player we're getting the index of
+                puuid: the puuid of the player we're getting the index of
 
             Returns:
                 The index of our accounts participant
 
         """
         for index, player in enumerate(participant_identities):
-            if player['player']['accountId'] == account_id:
+            if player['puuid'] == puuid:
                 return index
 
         return -1
@@ -244,6 +258,24 @@ class LolParser():
         else:
             self.logger.log_warning("Json already stored.")
 
+    def store_json_timeline(self, match: int, json_formatted_string: str):
+        """ Stores the json data for a match timeline into the json_timeline table.
+
+            Args:
+                match: The match id we're storing data for
+                json_formatted_string: The actual json data to be stored
+        """
+
+        json_row = self.our_db.session.query(JsonTimeline).filter_by(match_id=match).first()
+
+        if not json_row:
+            self.our_db.session.add(JsonTimeline(match_id=match,\
+                    json_timeline=json_formatted_string))
+
+            self.our_db.session.commit()
+        else:
+            self.logger.log_warning("Json already stored for timeline.")
+
     def store_run_info(self, source: str):
         """ Creates a new row in the script_runs table
 
@@ -272,112 +304,96 @@ class LolParser():
         script_row.matches_added = matches
 
         self.our_db.session.commit()
-
-    def get_gold_cs_xp_delta(self, timeline: dict) -> Tuple[float, float, float]:
-        """ Gets the gold, cs, and xp deltas from a timeline
+    @staticmethod
+    def get_gold_per_minute(participant: object, game_duration) -> int:
+        """ Gets the gold per minute for a player based on their gold earned.
 
             Args:
-                timeline: a timeline object associated with a participant in a match
+                participant: A participant object from riot.
+                game_duration: The length of the game in milliseconds.
 
             Returns:
-                A tuple containing the gold, cs, and xp deltas
+                The gold per minute for a player, for this match.
 
         """
-        num_of_deltas = 0
-        total_gold = 0
-        total_creeps = 0
-        total_xp = 0
-
-        cspm = -1.0
-        gpm = -1.0
-        xppm = -1.0
-
-        # Timeline data doesn't have a defined structure, so sometimes there's no info.
-        if 'goldPerMinDeltas' in timeline and 'creepsPerMinDeltas' in timeline\
-                and 'xpPerMinDeltas' in timeline:
-
-            try:
-                for delta in timeline['goldPerMinDeltas'].items():
-                    total_gold += delta[1]
-                    num_of_deltas += 1
-
-                gpm = float(total_gold / num_of_deltas)
-
-                for delta in timeline['creepsPerMinDeltas'].items():
-                    total_creeps += delta[1]
-
-                cspm = float(total_creeps / num_of_deltas)
-
-                for delta in timeline['xpPerMinDeltas'].items():
-                    total_xp += delta[1]
-
-                xppm = float(total_xp / num_of_deltas)
-            except ZeroDivisionError:
-                self.logger.log_warning("NO gold per minute or creeps per minute deltas GTFO")
-
-        return gpm, cspm, xppm
+        return participant['goldEarned'] / ((game_duration/1000)/60)
 
     @staticmethod
-    def get_role(timeline: dict) -> str:
-        """ Gets a players role based on their timeline
+    def get_cs_per_minute(participant: object, game_duration) -> float:
+        """ Gets the cs per minute for a player based on their minions earned.
 
             Args:
-                timeline: a timeline object associated with a participant in a match
+                participant: A participant object from riot.
+                game_duration: The length of the game in milliseconds.
 
             Returns:
-                The lane the player played in, or NONE if we couldn't determine.
+                The cs per minute for a player, for this match.
 
         """
-        lane = timeline['lane']
-        role = timeline['role']
+        return participant['totalMinionsKilled'] / ((game_duration/1000)/60)
 
-        if lane == 'BOTTOM':
-            if role == 'DUO_SUPPORT':
-                return 'SUPPORT'
-            if role == 'DUO_CARRY':
-                return  'BOTTOM'
+    @staticmethod
+    def get_xp_per_minute(participant: object, game_duration) -> float:
+        """ Gets the xp per minute for a player based on their gold earned.
 
-            return  'NONE'
+            Args:
+                participant: A participant object from riot.
+                game_duration: The length of the game in milliseconds.
 
-        if role == "SOLO" and lane not in ('TOP', 'MIDDLE', 'JUNGLE'):
-            return 'NONE'
+            Returns:
+                The xp per minute for a player, for this match.
 
-        return lane
+        """
+        return participant['champExperience'] / ((game_duration/1000)/60)
 
-    def get_enemy_champ(self, role: str, participant_index: int, participants: dict) -> int:
-        """ Gets our players enemy champion id, if the enemy team has all 5 roles.
+
+    @staticmethod
+    def get_role(participant: dict) -> str:
+        """ Gets a players role
+
+            Args:
+                participant: a participants stats
+
+            Returns:
+                The role the player queue'd for.
+
+        """
+
+        role = participant['teamPosition']
+        if role == "UTILITY":
+            role = "SUPPORT"
+
+        if role == "":
+            return "NONE"
+
+        return role
+
+    @staticmethod
+    def get_enemy_champ(role: str, p_index: int, participants: dict) -> Tuple[int, str]:
+        """ Gets the lane opponents champion for a player.
 
             Args:
                 role: a string denoting our role. TOP, JUNGLE, BOTTOM, etc.
-                participant_index: the index of our participant dict
+                p_index: the index of our participant dict
                 participants: A large dictionary of the games participants, whos keys are ints
 
             Returns:
-                An integer value representing the champion that was played by our lane opponent
+                A tuple containing the id and name of the champion that was played by our lane
+                opponent.
 
         """
-        if role != 'NONE':
-            enemy_participants_roles = []
-            enemy_champions = []
-            our_team_id = participants[participant_index]['teamId']
 
-            for participant in participants:
-                if participant['teamId'] != our_team_id:
-                    timeline = participant['timeline']
-                    enemy_participants_roles.append(self.get_role(timeline))
-                    enemy_champions.append(participant['championId'])
+        # Support is classified as UTILITY now.
+        if role == "SUPPORT":
+            role = "UTILITY"
 
-            if 'NONE' in enemy_participants_roles:
-                return -1
+        our_team_id = participants[p_index]['teamId']
 
-            if 'TOP' in enemy_participants_roles and 'MIDDLE' in enemy_participants_roles \
-                    and 'JUNGLE' in enemy_participants_roles and 'BOTTOM' in\
-                    enemy_participants_roles and 'SUPPORT' in enemy_participants_roles:
+        for participant in participants:
+            if participant['teamId'] != our_team_id and participant['teamPosition'] == role:
+                return participant['championId'], participant['championName']
 
-                #get the index of the role we passed in, and pass that champion back.
-                return enemy_champions[enemy_participants_roles.index(role)]
-
-        return -1
+        return -1, ""
 
     @staticmethod
     def get_start_time_and_duration(game_create_time: float, game_duration: float) -> Tuple:
@@ -525,7 +541,9 @@ class LolParser():
                 team_id: our teams team_id
         """
 
-        participant_index = self.get_participant_index(match_data['participantIdentities'],\
+        match_data = match_data['info']
+
+        participant_index = self.get_participant_index(match_data['participants'],\
                 account_id)
 
         participant = match_data['participants'][participant_index]
@@ -535,11 +553,9 @@ class LolParser():
         if team_id == 100:
             team_data = match_data['teams'][0]
             enemy_team_data = match_data['teams'][1]
-            #enemy_team_id = 200
         elif team_id == 200:
             team_data = match_data['teams'][1]
             enemy_team_data = match_data['teams'][0]
-            #enemy_team_id = 100
 
         return team_data, enemy_team_data, team_id
 
@@ -598,4 +614,20 @@ class LolParser():
 
         league_user.puuid = puuid
 
+        self.our_db.session.commit()
+
+    def store_league_user(self, account_data):
+        """ Stores a puuid into an league user row for a particiular account_name
+
+            Args:
+                account_data: Account data from riot games
+
+        """
+        league_user = LeagueUsers()
+
+        league_user.puuid = account_data['puuid']
+        league_user.summoner_name = account_data['name']
+        league_user.riot_id = account_data['accountId']
+
+        self.our_db.session.add(league_user)
         self.our_db.session.commit()

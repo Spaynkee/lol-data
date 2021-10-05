@@ -219,6 +219,24 @@ class JsonData(Base):
         self.match_id = match_id
         self.json_data = json_data
 
+class JsonTimeline(Base):
+    """ JsonTimeline is the model for our json_timeline table.
+
+        Attributes:
+            match_id        (int): Primary Key; the match_id associated with this timeline data.
+            json_timeline   (txt): The raw json returned by riot games api.
+
+    """
+    __tablename__ = "json_timeline"
+    __table_args__ = {"mysql_default_charset":"utf8"}
+
+    match_id = Column(BigInteger, primary_key=True)
+    json_timeline = Column(Text(4294000000))
+
+    def __init__(self, match_id=None, json_timeline = None):
+        self.match_id = match_id
+        self.json_timeline = json_timeline
+
 class Champions(Base):
     """ Champions is the model for the champions table.
 

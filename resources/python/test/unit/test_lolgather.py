@@ -17,8 +17,8 @@ from unittest.mock import patch
 from resources.python.classes.lolgather import LolGather
 from resources.python.classes.lolconfig import LolConfig
 
-class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
-    """ Contains all the test cases for get_match_reference_dto().
+class TestLolGatherGetMatchesList(unittest.TestCase):
+    """ Contains all the test cases for get_matches_list().
     """
     def setUp(self):
         """ set up method for our test cases. This runs for every test case. Instantiates the
@@ -34,20 +34,20 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
 
         """
 
+        mock_json.return_value = ["1234"] # avoiding the break statement
         gather = LolGather()
-        gather.get_match_reference_dto("123")
+        gather.get_matches_list("123", 400)
         self.assertEqual(mock_requests.call_count, 2)
         self.assertEqual(mock_json.call_count, 2)
 
-
         self.assertEqual(mock_requests.call_args_list[0].args[0],\
                 "https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/"+\
-                f"123/ids?start=0&count=100&api_key={self.config.api_key}")
+                f"123/ids?start=0&queue=400&count=100&api_key={self.config.api_key}")
 
 
         self.assertEqual(mock_requests.call_args_list[1].args[0],\
                 "https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/"+\
-                f"123/ids?start=100&count=100&api_key={self.config.api_key}")
+                f"123/ids?start=100&queue=400&count=100&api_key={self.config.api_key}")
 
 
     @patch('json.loads')
@@ -58,13 +58,13 @@ class TestLolGatherGetMatchReferenceDto(unittest.TestCase):
         """
 
         gather = LolGather(50)
-        gather.get_match_reference_dto("123")
+        gather.get_matches_list("123", 400)
         self.assertEqual(mock_requests.call_count, 1)
         self.assertEqual(mock_json.call_count, 1)
 
         self.assertEqual(mock_requests.call_args_list[0].args[0],\
                 "https://americas.api.riotgames.com/lol/match/v5/matches/by-puuid/"+\
-                f"123/ids?start=0&count=50&api_key={self.config.api_key}")
+                f"123/ids?start=0&queue=400&count=50&api_key={self.config.api_key}")
 
 class TestLolGatherGetPuuid(unittest.TestCase):
     """ Contains all the test cases for get_puuid
@@ -114,12 +114,12 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         """
 
         gather = LolGather(100)
-        gather.get_match_data("123")
+        gather.get_match_data("1234")
         mock_requests.assert_called_once()
         mock_json.assert_called_once()
 
         self.assertEqual(mock_requests.call_args.args[0],\
-            "https://americas.api.riotgames.com/lol/match/v5/matches/123"+\
+            "https://americas.api.riotgames.com/lol/match/v5/matches/NA1_1234"+\
             f"?api_key={self.config.api_key}")
 
 if __name__ == "__main__":

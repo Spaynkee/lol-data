@@ -19,7 +19,9 @@ class LolAccount():
 
     """
 
-    match_types = [400, 410, 420, 440, 700] # make sure this includes new types of matchmade games
+    #match_types = {"Draft": 400, "Ranked": 420, "Flex": 440, "Clash": 700}
+    match_types = [400, 420, 440, 700] # make sure this includes new types of matchmade games
+
 
     def __init__(self, name):
         self.account_name = name

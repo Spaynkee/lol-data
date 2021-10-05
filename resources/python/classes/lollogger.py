@@ -17,11 +17,12 @@ class LolLogger():
 
     """
 
-    def __init__(self, file_name=None):
+    def __init__(self, file_name=None, stdout=False):
         #pylint: disable=no-value-for-parameter # this is a false positive?
         self.log_file_name = file_name
 
         logging.basicConfig(filename=self.log_file_name, level=logging.DEBUG)
+        self.stdout = stdout
 
         self.logger = logging.getLogger()
 
@@ -33,6 +34,9 @@ class LolLogger():
         """
         self.logger.info(message)
 
+        if self.stdout is True:
+            print(message)
+
     def log_warning(self, message: str):
         """ Logs a warning message.
 
@@ -40,6 +44,9 @@ class LolLogger():
                 message: the message to be stored.
         """
         self.logger.warning(message)
+
+        if self.stdout is True:
+            print(message)
 
     def log_error(self, message: str):
         """ Logs an error message.
@@ -49,6 +56,9 @@ class LolLogger():
         """
         self.logger.error(message)
 
+        if self.stdout is True:
+            print(message)
+
     def log_critical(self, message: str):
         """ Logs an critical message. uh oh.
 
@@ -56,3 +66,6 @@ class LolLogger():
                 message: the message to be stored.
         """
         self.logger.critical(message)
+
+        if self.stdout is True:
+            print(message)
