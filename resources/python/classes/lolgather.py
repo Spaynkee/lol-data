@@ -32,9 +32,8 @@ class LolGather():
     def __init__(self, max_game_index=200):
         self.base_summoner_url = "https://na1.api.riotgames.com/lol/summoner/v4/"
         self.account_name_url = "summoners/by-name/"
-        self._base_match_url = "https://na1.api.riotgames.com/lol/match/v4/"
-        self._matches_url = "matchlists/by-account/"
-        self._match_url = "matches/"
+        self._base_match_url = "https://americas.api.riotgames.com/lol/match/v5/matches/"
+
         self.max_game_index = max_game_index
 
         self.lolparser = LolParser()
@@ -44,36 +43,44 @@ class LolGather():
         self.match_id_list = ""
         self.logger = LolLogger(self.config.log_file_name)
 
-    def get_match_reference_dto(self, account_id: str) -> list:
+    def get_matches_list(self, account_id: str, queue_type: int) -> list:
         """ Gets an individual account's recently played match ids.
 
             Args:
                 account_id: The account id associated with our account
+                queue_type: The queue_type we want games for.
 
             Returns:
-                A list containing MatchReferenceDto objects from riot games.
+                A list containing match_ids from riot games.
 
         """
         game_index = 0
         player_matches = []
 
+        if self.max_game_index <= 100:
+            index_increment = self.max_game_index
+        else:
+            index_increment = 100
+
         # keeps looping until we get to the max_game_index
         # a higher max game index makes us check further back in time.
         while game_index < self.max_game_index:
             try:
-                player_matches_response = requests.get(''.join([self._base_match_url,\
-                        self._matches_url, account_id, "?beginIndex=", str(game_index),\
-                        "&endIndex=", str(game_index+100),\
-                        "&api_key=", self.config.api_key]))
+                player_matches_response = requests.get(''.join([self._base_match_url,"by-puuid/",\
+                        account_id, "/ids?start=", str(game_index), "&queue=", str(queue_type),\
+                        "&count=", str(index_increment), "&api_key=", self.config.api_key]))
 
                 player_matches_response.raise_for_status()
-                player_matches_response_dict = json.loads(player_matches_response.text)
+                player_matches_response_list= json.loads(player_matches_response.text)
 
-                if not player_matches_response_dict['matches']:
+                if len(player_matches_response_list) == 0:
                     break
 
-                player_matches.append(player_matches_response_dict)
+                # we want to only append the games, not the list.
+                player_matches += player_matches_response_list
+
                 game_index += 100
+
             except requests.exceptions.RequestException as exc:
                 self.logger.log_critical("Get_account_info broke")
                 if exc.response.status_code == 403:
@@ -107,8 +114,8 @@ class LolGather():
 
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
-            matches_response = requests.get(''.join([self._base_match_url, self._match_url,\
-                    str(match_id), "?api_key=", self.config.api_key]))
+            matches_response = requests.get(''.join([self._base_match_url,\
+                    f"NA1_{str(match_id)}", "?api_key=", self.config.api_key]))
 
             matches_response.raise_for_status()
             match_json = json.loads(matches_response.text)
@@ -126,27 +133,25 @@ class LolGather():
         return ""
 
     @staticmethod
-    def get_unstored_match_ids(prev_matches: list, new_matches: list,\
-            match_types: list) -> list:
+    def get_unstored_match_ids(prev_matches: list, new_matches: dict) -> list:
         """ Compares a set of previous match ids with the data we return from riot to determine
             which matches we will need to get data for.
 
             Args:
                 prev_matches: the list of matches we already have data for.
-                new_matches: A list containing data objects that include recent game ids.
+                new_matches: A dict containing recent game ids. queue type is the key.
                 match_types: A list of the match types to include in the comparison.
 
             Returns:
-                A list of match ids a player was in, but that we don't have stored yet.
+                A list (int) of match ids a player was in, but that we don't have stored yet.
         """
 
         unstored_match_ids = []
 
-        for page in new_matches:
-            for match in page['matches']:
-                if match['queue'] in match_types:
-                    if match['gameId'] not in prev_matches:
-                        unstored_match_ids.append(match['gameId'])
+        for _, match_list in new_matches.items():
+            for match in match_list:
+                if int(match[4:]) not in prev_matches:
+                    unstored_match_ids.append(int(match[4:]))
 
         return unstored_match_ids
 
@@ -159,6 +164,7 @@ class LolGather():
             Returns:
                 The account_id associated with this account from riot
         """
+
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
                     self.account_name_url, account_name, "?api_key=", self.config.api_key]))
@@ -170,5 +176,59 @@ class LolGather():
                 self.logger.log_critical("Api key is probably expired")
 
             self.logger.log_critical("get_user_id broke")
+
+        return ""
+
+    def get_match_timeline(self, match_id: int) -> str:
+        """ Gets an individual matches timeline
+
+            Args:
+            match_id: The match id we're getting the timeline of.
+
+            Returns:
+            The text form of the json object we get from riot games,
+            so that it can be stored in the timeline_data table.
+
+        """
+        try:
+            self.logger.log_info(''.join(["getting match timeline for ", str(match_id)]))
+
+            time.sleep(.08) # this should keep us around the 20 per 1 second limit.
+
+            timeline_response = requests.get(''.join([self._base_match_url, f"NA1_{str(match_id)}",\
+                "/timeline", "?api_key=", self.config.api_key]))
+
+            timeline_response.raise_for_status()
+
+            return timeline_response.text
+
+        except requests.exceptions.RequestException as exc:
+            self.logger.log_critical(exc)
+            self.logger.log_warning("Get_match_data broke, trying again")
+            time.sleep(10)
+            return self.get_match_timeline(match_id)
+
+        return ""
+
+    def get_league_user_data(self, account_name: str):
+        """ Gets an accounts info for a particular username
+
+            Args:
+                account_name: the account name we're storing the puuid for
+
+            Returns:
+                The info riot has associated with this account.
+        """
+        try:
+            account_response = requests.get(''.join([self.base_summoner_url,\
+                    self.account_name_url, account_name, "?api_key=", self.config.api_key]))
+            account_response.raise_for_status()
+            account_data = json.loads(account_response.text)
+            return account_data
+        except requests.exceptions.RequestException as exc:
+            if exc.response.status_code == 403:
+                self.logger.log_critical("Api key is probably expired")
+
+            self.logger.log_critical("get_league_user_data  broke")
 
         return ""

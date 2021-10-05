@@ -108,7 +108,13 @@ class LolData():
         acc.account_id = self.parser.get_account_id(acc.account_name)
 
         # Gets all the recent games the account has played
-        recent_player_matches = self.gatherer.get_match_reference_dto(acc.account_id)
+        recent_player_matches = {}
+
+        for queue_type in LolAccount.match_types:
+            match_list_per_queue = self.gatherer.get_matches_list(acc.account_id,\
+                    queue_type)
+
+            recent_player_matches[queue_type] = match_list_per_queue
 
         # gets a list of matches we've already stored for this player.
         acc.previous_player_matches = self.parser.get_previous_player_match_data_ids(\
@@ -116,7 +122,7 @@ class LolData():
 
         # determines only the new matches we still need to save.
         acc.new_user_matches = self.gatherer.get_unstored_match_ids(\
-                acc.previous_player_matches, recent_player_matches, LolAccount.match_types)
+                acc.previous_player_matches, recent_player_matches)
 
     def store_new_match_data(self, acc):
         """ Makes the calls needed to the gatherer and parser to actually get and store data for a
@@ -133,13 +139,18 @@ class LolData():
                 match_json_str = self.gatherer.get_match_data(match)
                 match_data = json.loads(match_json_str)
 
+                match_timeline_str = self.gatherer.get_match_timeline(match)
+
                 self.parser.store_json_data(match, match_json_str)
+                self.parser.store_json_timeline(match, match_timeline_str)
+
             else:
                 # We did already have the match data, so we just pull that data from the gatherer.
                 match_data = self.gatherer.new_match_data[match]
 
             # Store the player data for this match into the player data table.
-            self.parser.insert_match_data_row(match_data, acc.account_name, acc.account_id)
+            self.parser.insert_match_data_row(match_data, acc.account_name,\
+                    acc.account_id)
 
     def store_new_team_data(self, acc, previous_team_data_matches: list):
         """ Makes the calls needed to the gatherer and parser to actually get and store team data
