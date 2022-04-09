@@ -9,7 +9,8 @@ pub fn get_league_users() -> std::string::String {
         struct LeagueUsers {
                 id: i64,
                 summoner_name: Option<String>,
-                riot_id: Option<String>
+                riot_id: Option<String>,
+                puuid: Option<String>
         }
 
         let mut settings = Config::default();
@@ -39,7 +40,8 @@ pub fn get_league_users() -> std::string::String {
         LeagueUsers {
             id: row.take("id").unwrap(),
             summoner_name: row.take("summoner_name").unwrap(),
-            riot_id: row.take("riot_id").unwrap()
+            riot_id: row.take("riot_id").unwrap(),
+            puuid: row.take("puuid").unwrap()
         }
         }).collect()}).unwrap();
 
