@@ -37,5 +37,10 @@ class LolConfig():
         self.db_pw = self._config.get('DATABASE', 'db_password')
         self.db_name = self._config.get('DATABASE', 'db_name')
 
+        self.mongo_host = self._config.get('MONGO', 'mongo_host')
+        self.mongo_user = self._config.get('MONGO', 'mongo_user')
+        self.mongo_pw = self._config.get('MONGO', 'mongo_password')
+        self.mongo_name = self._config.get('MONGO', 'mongo_name')
+
         self.api_key = self._config.get('RIOT', 'api_key')
         self.log_file_name = self._config.get('LOGGING', 'file_name')
