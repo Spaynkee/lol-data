@@ -118,11 +118,11 @@ class LolGather():
                     f"NA1_{str(match_id)}", "?api_key=", self.config.api_key]))
 
             matches_response.raise_for_status()
-            match_json = json.loads(matches_response.text)
+            match_json = matches_response.json()
 
             self.new_match_data[match_id] = match_json
 
-            return matches_response.text
+            return match_json
 
         except requests.exceptions.RequestException as exc:
             self.logger.log_critical(exc)
@@ -199,8 +199,9 @@ class LolGather():
                 "/timeline", "?api_key=", self.config.api_key]))
 
             timeline_response.raise_for_status()
+            timeline_json = timeline_response.json()
 
-            return timeline_response.text
+            return timeline_json
 
         except requests.exceptions.RequestException as exc:
             self.logger.log_critical(exc)

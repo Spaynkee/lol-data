@@ -22,7 +22,7 @@ class RemoveDB(unittest.TestCase):
 
     def test_after_removing(self):
         """
-            I'm not saying it again.
+            This class removes some amount of data from the database, then ensures it's actually gone.
 
         """
         config = LolConfig()
