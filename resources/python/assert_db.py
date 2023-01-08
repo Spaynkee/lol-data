@@ -14,6 +14,7 @@ import json
 import unittest
 import requests
 from classes.loldb import LolDB
+from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
 from classes.models import TeamData, MatchData, ScriptRuns, JsonData
 
@@ -21,140 +22,156 @@ from classes.models import TeamData, MatchData, ScriptRuns, JsonData
 #pylint: disable=too-many-statements # This is also okay.
 
 class E2e(unittest.TestCase):
-    """ ensures the loldata.py script works exactly as it does in current prod.
+    """ Ensures the loldata.py script works exactly as it does in current prod.
+        this script compares the data stored in prod with the data stored in test.
+        They should be exactly the same if the collection script is still working exactly as it was.
 
     """
     def test(self):
-        """
-            It does the thing.
+        """ This function does the prod/test comparison.
 
         """
         config = LolConfig()
 
         our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
+        our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw, config.mongo_name)
 
         # get team data from prod
         my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data")
-        ptd = json.loads(my_team_data.text)
+        prod_team_data = json.loads(my_team_data.text)
 
         # get team data from test
-        ttd = our_db.session.query(TeamData).order_by(TeamData.match_id.desc()).all()
+        test_team_data = our_db.session.query(TeamData).order_by(TeamData.match_id.desc()).all()
 
-        self.assertEqual(len(ptd), len(ttd))
+        self.assertEqual(len(prod_team_data), len(test_team_data))
 
         print("Checking team_data")
-        for i, _ in enumerate(ptd):
-            self.assertEqual(ptd[i]['match_id'], ttd[i].match_id)
-            self.assertEqual(str(ptd[i]['game_version']), str(ttd[i].game_version))
-            self.assertEqual(ptd[i]['win'], str(ttd[i].win))
-            self.assertEqual(ptd[i]['participants'], str(ttd[i].participants))
-            self.assertEqual(ptd[i]['first_blood'], str(ttd[i].first_blood))
-            self.assertEqual(ptd[i]['first_baron'], str(ttd[i].first_baron))
-            self.assertEqual(ptd[i]['first_tower'], str(ttd[i].first_tower))
-            self.assertEqual(ptd[i]['first_dragon'], str(ttd[i].first_dragon))
-            self.assertEqual(str(ptd[i]['first_inhib']), str(ttd[i].first_inhib))
-            self.assertEqual(str(ptd[i]['first_rift_herald']), str(ttd[i].first_rift_herald))
-            self.assertEqual(str(ptd[i]['ally_dragon_kills']), str(ttd[i].ally_dragon_kills))
-            self.assertEqual(str(ptd[i]['ally_rift_herald_kills']),\
-                    str(ttd[i].ally_rift_herald_kills))
+        for i, _ in enumerate(prod_team_data):
+            self.assertEqual(prod_team_data[i]['match_id'], test_team_data[i].match_id)
+            self.assertEqual(str(prod_team_data[i]['game_version']),\
+                    str(test_team_data[i].game_version))
+            self.assertEqual(prod_team_data[i]['win'], str(test_team_data[i].win))
+            self.assertEqual(prod_team_data[i]['participants'], str(test_team_data[i].participants))
+            self.assertEqual(prod_team_data[i]['first_blood'], str(test_team_data[i].first_blood))
+            self.assertEqual(prod_team_data[i]['first_baron'], str(test_team_data[i].first_baron))
+            self.assertEqual(prod_team_data[i]['first_tower'], str(test_team_data[i].first_tower))
+            self.assertEqual(prod_team_data[i]['first_dragon'], str(test_team_data[i].first_dragon))
+            self.assertEqual(str(prod_team_data[i]['first_inhib']),\
+                    str(test_team_data[i].first_inhib))
+            self.assertEqual(str(prod_team_data[i]['first_rift_herald']),\
+                    str(test_team_data[i].first_rift_herald))
+            self.assertEqual(str(prod_team_data[i]['ally_dragon_kills']),\
+                    str(test_team_data[i].ally_dragon_kills))
+            self.assertEqual(str(prod_team_data[i]['ally_rift_herald_kills']),\
+                    str(test_team_data[i].ally_rift_herald_kills))
 
-            self.assertEqual(str(ptd[i]['enemy_dragon_kills']), str(ttd[i].enemy_dragon_kills))
-            self.assertEqual(str(ptd[i]['enemy_rift_herald_kills']),\
-                    str(ttd[i].enemy_rift_herald_kills))
+            self.assertEqual(str(prod_team_data[i]['enemy_dragon_kills']),\
+                    str(test_team_data[i].enemy_dragon_kills))
+            self.assertEqual(str(prod_team_data[i]['enemy_rift_herald_kills']),\
+                    str(test_team_data[i].enemy_rift_herald_kills))
 
-            self.assertEqual(str(ptd[i]['inhib_kills']), str(ttd[i].inhib_kills))
-            self.assertEqual(str(ptd[i]['bans']), str(ttd[i].bans))
-            self.assertEqual(str(ptd[i]['enemy_bans']), str(ttd[i].enemy_bans))
-            self.assertEqual(str(ptd[i]['allies']), str(ttd[i].allies))
-            self.assertEqual(str(ptd[i]['enemies']), str(ttd[i].enemies))
-            self.assertEqual(str(ptd[i]['start_time']), str(ttd[i].start_time))
+            self.assertEqual(str(prod_team_data[i]['inhib_kills']),\
+                    str(test_team_data[i].inhib_kills))
+            self.assertEqual(str(prod_team_data[i]['bans']), str(test_team_data[i].bans))
+            self.assertEqual(str(prod_team_data[i]['enemy_bans']), str(test_team_data[i].enemy_bans))
+            self.assertEqual(str(prod_team_data[i]['allies']), str(test_team_data[i].allies))
+            self.assertEqual(str(prod_team_data[i]['enemies']), str(test_team_data[i].enemies))
+            self.assertEqual(str(prod_team_data[i]['start_time']), str(test_team_data[i].start_time))
 
 
         users = ['Spaynkee', 'Dumat', 'Archemlis', 'Stylus Crude', 'dantheninja6156', 'Csqward']
         for user in users:
             print(f"Checking match_data for {user}")
-            pud = json.loads(requests.get(\
+            prod_user_data = json.loads(requests.get(\
                 f"http://paulzplace.asuscomm.com/api/get_user_data?name={user}").text)
 
-            tud = our_db.session.query(MatchData).filter_by(player=user).order_by(\
+            test_user_data = our_db.session.query(MatchData).filter_by(player=user).order_by(\
                     MatchData.match_id.desc()).all()
 
-            self.assertEqual(len(pud), len(tud))
+            self.assertEqual(len(prod_user_data), len(test_user_data))
 
-            # add more fields
-            for i, _ in enumerate(pud):
-                self.assertEqual(str(pud[i]['match_id']), str(tud[i].match_id))
-                self.assertEqual(str(pud[i]['player']), str(tud[i].player))
-                self.assertEqual(str(pud[i]['role']), str(tud[i].role))
-                self.assertEqual(str(pud[i]['champion']), str(tud[i].champion))
-                self.assertEqual(str(pud[i]['champion_name']), str(tud[i].champion_name))
-                self.assertEqual(str(pud[i]['enemy_champion']), str(tud[i].enemy_champion))
+            for i, _ in enumerate(prod_user_data):
+                self.assertEqual(str(prod_user_data[i]['match_id']), str(test_user_data[i].match_id))
+                self.assertEqual(str(prod_user_data[i]['player']), str(test_user_data[i].player))
+                self.assertEqual(str(prod_user_data[i]['role']), str(test_user_data[i].role))
+                self.assertEqual(str(prod_user_data[i]['champion']), str(test_user_data[i].champion))
+                self.assertEqual(str(prod_user_data[i]['champion_name']),\
+                        str(test_user_data[i].champion_name))
+                self.assertEqual(str(prod_user_data[i]['enemy_champion']),\
+                        str(test_user_data[i].enemy_champion))
 
-                self.assertEqual(str(pud[i]['enemy_champion_name']),\
-                        str(tud[i].enemy_champion_name))
+                self.assertEqual(str(prod_user_data[i]['enemy_champion_name']),\
+                        str(test_user_data[i].enemy_champion_name))
 
-                self.assertEqual(str(pud[i]['first_blood']), str(tud[i].first_blood))
-                self.assertEqual(str(pud[i]['first_blood_assist']), str(tud[i].first_blood_assist))
-                self.assertEqual(str(pud[i]['kills']), str(tud[i].kills))
-                self.assertEqual(str(pud[i]['assists']), str(tud[i].assists))
-                self.assertEqual(str(pud[i]['deaths']), str(tud[i].deaths))
-                self.assertEqual(str(pud[i]['damage_to_champs']), str(tud[i].damage_to_champs))
-                self.assertEqual(str(pud[i]['damage_to_turrets']), str(tud[i].damage_to_turrets))
+                self.assertEqual(str(prod_user_data[i]['first_blood']),\
+                        str(test_user_data[i].first_blood))
+                self.assertEqual(str(prod_user_data[i]['first_blood_assist']),\
+                        str(test_user_data[i].first_blood_assist))
+                self.assertEqual(str(prod_user_data[i]['kills']), str(test_user_data[i].kills))
+                self.assertEqual(str(prod_user_data[i]['assists']), str(test_user_data[i].assists))
+                self.assertEqual(str(prod_user_data[i]['deaths']), str(test_user_data[i].deaths))
+                self.assertEqual(str(prod_user_data[i]['damage_to_champs']),\
+                        str(test_user_data[i].damage_to_champs))
+                self.assertEqual(str(prod_user_data[i]['damage_to_turrets']),\
+                        str(test_user_data[i].damage_to_turrets))
+
                 # floats don't like to cooperate.
-                if tud[i].gold_per_minute:
-                    self.assertEqual(pud[i]['gold_per_minute'],\
-                            f'{float(tud[i].gold_per_minute):g}')
+                if test_user_data[i].gold_per_minute:
+                    self.assertEqual(prod_user_data[i]['gold_per_minute'],\
+                            f'{float(test_user_data[i].gold_per_minute):g}')
 
-                if tud[i].creeps_per_minute:
-                    self.assertEqual(pud[i]['creeps_per_minute'],\
-                            f'{float(tud[i].creeps_per_minute):g}')
+                if test_user_data[i].creeps_per_minute:
+                    self.assertEqual(prod_user_data[i]['creeps_per_minute'],\
+                            f'{float(test_user_data[i].creeps_per_minute):g}')
 
-                if tud[i].xp_per_minute:
-                    self.assertEqual(pud[i]['xp_per_minute'], f'{float(tud[i].xp_per_minute):g}')
+                if test_user_data[i].xp_per_minute:
+                    self.assertEqual(prod_user_data[i]['xp_per_minute'],\
+                            f'{float(test_user_data[i].xp_per_minute):g}')
 
-                self.assertEqual(str(pud[i]['wards_placed']), str(tud[i].wards_placed))
+                self.assertEqual(str(prod_user_data[i]['wards_placed']),\
+                        str(test_user_data[i].wards_placed))
 
-                self.assertEqual(str(pud[i]['vision_wards_bought']),\
-                        str(tud[i].vision_wards_bought))
+                self.assertEqual(str(prod_user_data[i]['vision_wards_bought']),\
+                        str(test_user_data[i].vision_wards_bought))
 
-                self.assertEqual(str(pud[i]['wards_killed']), str(tud[i].wards_killed))
-                self.assertEqual(str(pud[i]['items']), str(tud[i].items))
-                self.assertEqual(str(pud[i]['perks']), str(tud[i].perks))
+                self.assertEqual(str(prod_user_data[i]['wards_killed']),\
+                        str(test_user_data[i].wards_killed))
+                self.assertEqual(str(prod_user_data[i]['items']), str(test_user_data[i].items))
+                self.assertEqual(str(prod_user_data[i]['perks']), str(test_user_data[i].perks))
 
-
+        # early return until we add mongo endpoints
+        return
         print("Checking json_data")
         my_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data")
 
-        pjd = json.loads(my_json_data.text)
-        tjd = our_db.session.query(JsonData).all()
+        prod_json_data = json.loads(my_json_data.text)
+        test_json_data = list(our_mongo.json.find())
 
-        self.assertEqual(len(pjd), len(tjd))
+        self.assertEqual(len(prod_json_data), len(test_json_data))
 
-        for i, _ in enumerate(pjd):
-            self.assertEqual(pjd[i]['match_id'], tjd[i].match_id)
-            self.assertEqual(pjd[i]['json_data'], tjd[i].json_data)
+        for i, _ in enumerate(prod_json_data):
+            self.assertEqual(prod_json_data[i]['match_id'], test_json_data[i]['_id'])
+            self.assertEqual(prod_json_data[i]['json_data'], test_json_data[i]['json_data'])
 
         print("Checking Script Runs")
         my_runs_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs")
-        prd = json.loads(my_runs_data.text)
-
-
-        trd = our_db.session.query(ScriptRuns).all()
+        prod_run_data = json.loads(my_runs_data.text)
+        test_run_data = our_db.session.query(ScriptRuns).all()
 
         # the test db will have one more script run, the one that just happened.
-        self.assertEqual(len(prd)+1, len(trd))
+        self.assertEqual(len(prod_run_data)+1, len(test_run_data))
 
-        for i, _ in enumerate(prd):
-            self.assertEqual(prd[i]['id'], trd[i].id)
-            self.assertEqual(prd[i]['source'], trd[i].source)
-            self.assertEqual(prd[i]['status'], trd[i].status)
-            self.assertEqual(prd[i]['matches_added'], trd[i].matches_added)
+        for i, _ in enumerate(prod_run_data):
+            self.assertEqual(prod_run_data[i]['id'], test_run_data[i].id)
+            self.assertEqual(prod_run_data[i]['source'], test_run_data[i].source)
+            self.assertEqual(prod_run_data[i]['status'], test_run_data[i].status)
+            self.assertEqual(prod_run_data[i]['matches_added'], test_run_data[i].matches_added)
 
 
         # make sure our script run was recorded correctly.
-        self.assertEqual(prd[-1]['id']+1, trd[-1].id)
-        self.assertEqual("Test", trd[-1].source)
-        self.assertEqual("Success", trd[-1].status)
+        self.assertEqual(prod_run_data[-1]['id']+1, test_run_data[-1].id)
+        self.assertEqual("Test", test_run_data[-1].source)
+        self.assertEqual("Success", test_run_data[-1].status)
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.

@@ -1,14 +1,16 @@
 """ lolparser.py class
 
 This class contains all the methods needed to store and retrieve league of legends
-data to or from our database. It handles all db transactions during the script run.
+data to or from our databases. It handles all db transactions during the script run.
 
 """
 import time
+import json
 from typing import Tuple, Dict
 from datetime import datetime as date
 from .lolconfig import LolConfig
 from .loldb import LolDB
+from .lolmongo import LolMongo
 from .lollogger import LolLogger
 from .models import TeamData, MatchData, JsonData, Champions, Items, ScriptRuns, LeagueUsers,\
         JsonTimeline
@@ -25,6 +27,9 @@ class LolParser():
 
         self.our_db = LolDB(self.config.db_host, self.config.db_user, self.config.db_pw,\
                 self.config.db_name)
+
+        self.mongodb = LolMongo(self.config.mongo_host, self.config.mongo_user,\
+                self.config.mongo_pw, self.config.mongo_name)
 
     def select_previous_match_data_rows(self, account_name: str) -> list:
         """ Gets the matches we already have in match_data and returns the match data as a list
@@ -243,16 +248,20 @@ class LolParser():
 
 
     def store_json_data(self, match: int, json_formatted_string: str):
-        """ Stores the json data for a single match into the json_data table.
+        """ Stores the json data for a single match into the json mongodb collection.
 
             Args:
                 match: The match id we're storing data for
                 json_formatted_string: The actual json data to be stored
         """
-
+        json_doc = self.mongodb.json.find_one({'_id': match})
         json_row = self.our_db.session.query(JsonData).filter_by(match_id=match).first()
 
-        if not json_row:
+        if not json_doc and not json_row:
+            json_formatted_string['_id'] = match
+            self.mongodb.json.insert_one(json_formatted_string)
+
+            # leaving sql code in for a week so we are sure everything works.
             self.our_db.session.add(JsonData(match_id=match, json_data=json_formatted_string))
             self.our_db.session.commit()
         else:
@@ -266,12 +275,16 @@ class LolParser():
                 json_formatted_string: The actual json data to be stored
         """
 
+        timeline_json_doc = self.mongodb.timeline_json.find_one({'_id': match})
         json_row = self.our_db.session.query(JsonTimeline).filter_by(match_id=match).first()
 
-        if not json_row:
+        if not timeline_json_doc and not json_row:
+            json_formatted_string['_id'] = match
+            self.mongodb.timeline_json.insert_one(json_formatted_string)
+
+            # leaving sql code in there for now.
             self.our_db.session.add(JsonTimeline(match_id=match,\
                     json_timeline=json_formatted_string))
-
             self.our_db.session.commit()
         else:
             self.logger.log_warning("Json already stored for timeline.")
@@ -304,6 +317,7 @@ class LolParser():
         script_row.matches_added = matches
 
         self.our_db.session.commit()
+
     @staticmethod
     def get_gold_per_minute(participant: object, game_duration) -> int:
         """ Gets the gold per minute for a player based on their gold earned.

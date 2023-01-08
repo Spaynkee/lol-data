@@ -12,8 +12,10 @@ import sys
 import json
 import requests
 from classes.loldb import LolDB
+from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
-from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData, LeagueUsers
+from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData, LeagueUsers\
+        TimelineJsonData
 
 #pylint: disable=too-many-locals # This is okay.
 def main():
@@ -25,6 +27,10 @@ def main():
     # we need to drop all the existing tables so we can re populate.
     config = LolConfig()
     our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
+    our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw, config.mongo_name)
+
+    for collection in our_mongo.db.list_collection_names():
+        our_mongo.db.drop[collection]
 
     our_db.metadata.drop_all(our_db.engine)
     our_db.session.commit()
@@ -70,10 +76,32 @@ def main():
     our_db.session.add_all([Items(**item) for item in items])
 
     print("getting json data. Big Oof")
-    # json data
     my_json_data_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data")
     json_data = json.loads(my_json_data_data.text)
+
+    for row in json_data:
+        if not our_mongo.json.find_one(row['match_id']):
+            a_dict = {'_id': row.match_id,
+                    'json_data': row.json_data}
+            our_mongo.json.insert_one(a_dict)
+        else:
+            continue
+
+    print("getting timeline json data. Biggest Oof")
+    my_timeline_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_timeline_json_data")
+    timeline_json_data = json.loads(my_timeline_json_data.text)
+
+    for row in timeline_json_data:
+        if not our_mongo.timeline_json.find_one(row['match_id']):
+            a_dict = {'_id': row.match_id,
+                    'json_data': row.json_data}
+            our_mongo.timeline_json.insert_one(a_dict)
+        else:
+            continue
+
+    # cut these after we drop json from sql
     our_db.session.add_all([JsonData(**json) for json in json_data])
+    our_db.session.add_all([TimelineJsonData(**json) for json in timeline_json_data])
     our_db.session.commit()
 
 def remove_win(user_data_list):

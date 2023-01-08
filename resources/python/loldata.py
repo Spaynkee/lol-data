@@ -86,7 +86,7 @@ class LolData():
 
         # this line triggers the linter, but I think it has to stay, so...
         except Exception as exc:
-            except_string = f"Except: {type(exc)} {str(exc)}"
+            except_string = f"Except: {type(exc)} {str(exc)} {exc.__traceback__}"
             self.parser.update_run_info("Failed", self.gatherer.match_id_list, except_string)
             self.logger.log_warning("Script run failed.\n")
             self.logger.log_warning(except_string)
@@ -136,12 +136,11 @@ class LolData():
             # If we don't have the data for this match yet.
             if match not in self.gatherer.new_match_data:
                 # get the match data from the gatherer
-                match_json_str = self.gatherer.get_match_data(match)
-                match_data = json.loads(match_json_str)
+                match_data = self.gatherer.get_match_data(match)
 
                 match_timeline_str = self.gatherer.get_match_timeline(match)
 
-                self.parser.store_json_data(match, match_json_str)
+                self.parser.store_json_data(match, match_data)
                 self.parser.store_json_timeline(match, match_timeline_str)
 
             else:
