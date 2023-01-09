@@ -140,8 +140,8 @@ class LolData():
 
                 match_timeline_str = self.gatherer.get_match_timeline(match)
 
-                self.parser.store_json_data(match, match_data)
-                self.parser.store_json_timeline(match, match_timeline_str)
+                self.parser.store_json_data(match, json.dumps(match_data))
+                self.parser.store_json_timeline(match, json.dumps(match_timeline_str))
 
             else:
                 # We did already have the match data, so we just pull that data from the gatherer.
