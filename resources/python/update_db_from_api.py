@@ -11,13 +11,16 @@ data to anywhere that doesn't have access to a sql dump.
 import sys
 import json
 import requests
+#pylint: disable=import-error # False positives
 from classes.loldb import LolDB
 from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
-from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData, LeagueUsers\
-        TimelineJsonData
+from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData,\
+        LeagueUsers, TimelineJsonData
 
 #pylint: disable=too-many-locals # This is okay.
+#pylint: disable=W0104 # Dropping a collection isn't a useless statement.
+#pylint: disable=too-many-statements # This is also okay.
 def main():
     """
         We make at least 7 requests to our public endpoints, and populate the db with that data.
@@ -88,7 +91,8 @@ def main():
             continue
 
     print("getting timeline json data. Biggest Oof")
-    my_timeline_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_timeline_json_data")
+    my_timeline_json_data = requests.get(\
+            "http://paulzplace.asuscomm.com/api/get_timeline_json_data")
     timeline_json_data = json.loads(my_timeline_json_data.text)
 
     for row in timeline_json_data:

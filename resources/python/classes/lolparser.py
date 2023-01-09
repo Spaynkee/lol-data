@@ -5,7 +5,6 @@ data to or from our databases. It handles all db transactions during the script 
 
 """
 import time
-import json
 from typing import Tuple, Dict
 from datetime import datetime as date
 from .lolconfig import LolConfig

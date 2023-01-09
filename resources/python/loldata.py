@@ -11,6 +11,7 @@ Example:
     $ python3 loldata.py Manual 3000
 
 """
+#pylint: disable=import-error # False positives
 import json
 import sys
 from classes.lolconfig import LolConfig

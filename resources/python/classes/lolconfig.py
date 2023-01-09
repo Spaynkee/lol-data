@@ -7,6 +7,7 @@
 import configparser
 
 #pylint: disable=too-few-public-methods # This is fine for lolconfig.
+#pylint: disable=too-many-instance-attributes # This is fine for lolconfig.
 class LolConfig():
     """ Contains all the methods and functions needed by loldata.py and lolaccount.py
         Attributes:

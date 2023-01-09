@@ -8,6 +8,7 @@ exists in prod.
 To that end, this portion of the 'e2e' 'test' removes some data prior to running loldata.py.
 
 """
+#pylint: disable=import-error # False positives
 import sys
 import unittest
 from classes.loldb import LolDB
@@ -22,7 +23,7 @@ class RemoveDB(unittest.TestCase):
 
     def test_after_removing(self):
         """
-            This class removes some amount of data from the database, then ensures it's actually gone.
+            This class removes some amount of data from the database, then ensures it's really gone.
 
         """
         config = LolConfig()
