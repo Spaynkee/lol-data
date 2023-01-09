@@ -258,8 +258,8 @@ class LolParser():
         json_row = self.our_db.session.query(JsonData).filter_by(match_id=match).first()
 
         if not json_doc and not json_row:
-            json_formatted_string['_id'] = match
-            self.mongodb.json.insert_one(json_formatted_string)
+            insert_dict = {'_id': match, 'json_data': json_formatted_string}
+            self.mongodb.json.insert_one(insert_dict)
 
             # leaving sql code in for a week so we are sure everything works.
             self.our_db.session.add(JsonData(match_id=match, json_data=json_formatted_string))
@@ -279,8 +279,8 @@ class LolParser():
         json_row = self.our_db.session.query(JsonTimeline).filter_by(match_id=match).first()
 
         if not timeline_json_doc and not json_row:
-            json_formatted_string['_id'] = match
-            self.mongodb.timeline_json.insert_one(json_formatted_string)
+            insert_dict = {'_id': match, 'json_timeline': json_formatted_string}
+            self.mongodb.timeline_json.insert_one(insert_dict)
 
             # leaving sql code in there for now.
             self.our_db.session.add(JsonTimeline(match_id=match,\

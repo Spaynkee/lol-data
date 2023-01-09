@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 pub fn get_team_data() -> std::string::String {
 
-        #[derive(Debug, PartialEq, Eq, RustcEncodable)]
+        #[derive(Debug, PartialEq, Eq, RustcEncodable, PartialOrd)]
         struct TeamData {
                 match_id: i64,
                 game_version: Option<String>,
