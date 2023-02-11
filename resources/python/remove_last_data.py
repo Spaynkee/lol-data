@@ -9,6 +9,7 @@ To that end, this portion of the 'e2e' 'test' removes some data prior to running
 
 """
 #pylint: disable=import-error # False positives
+#pylint: disable=unreachable # We need this to prevent careless running on prod.
 import sys
 import unittest
 from classes.loldb import LolDB

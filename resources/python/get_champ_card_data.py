@@ -45,7 +45,8 @@ def main():
     incnone = sys.argv[4]
 
     # Consider switching to db calls? hmm.
-    team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data?name="+sys.argv[1])
+    team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data?name="+sys.argv[1],\
+            timeout=200)
 
     team_matches = json.loads(team_data.text)
     team_matches_df = pd.DataFrame(team_matches)
@@ -100,7 +101,7 @@ def get_player_data(player: str) -> pd.DataFrame:
             A dataframe containing all of the data we have for 'player'.
     """
     return pd.DataFrame(json.loads(requests.get(\
-            f"http://paulzplace.asuscomm.com/api/get_user_data?name={player}").text))
+            f"http://paulzplace.asuscomm.com/api/get_user_data?name={player}", timeout=200).text))
 
 def merge_team_and_player_df(player_df: pd.DataFrame, team_df: pd.DataFrame) -> pd.DataFrame:
     """ Merges a players matches dataframe with the data stored in the team dataframe.

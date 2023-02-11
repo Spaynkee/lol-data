@@ -20,6 +20,7 @@ from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, Js
 
 #pylint: disable=too-many-locals # This is okay.
 #pylint: disable=W0104 # Dropping a collection isn't a useless statement.
+#pylint: disable=unreachable # safeguard from running in prod.
 #pylint: disable=too-many-statements # This is also okay.
 def main():
     """
@@ -43,13 +44,14 @@ def main():
 
     print("Getting script runs")
     # script runs table.
-    my_script_run_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs")
+    my_script_run_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs",\
+            timeout=200)
     script_runs = json.loads(my_script_run_data.text)
     our_db.session.add_all([ScriptRuns(**run) for run in script_runs])
 
     print("getting team data")
     # team data table
-    my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data")
+    my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data", timeout=200)
     matches = json.loads(my_team_data.text)
     our_db.session.add_all([TeamData(**match) for match in matches])
 
@@ -62,24 +64,26 @@ def main():
 
     print("getting league users")
     #league_users table
-    my_league_user_data = requests.get("http://paulzplace.asuscomm.com/api/get_league_users")
+    my_league_user_data = requests.get("http://paulzplace.asuscomm.com/api/get_league_users",\
+            timeout=200)
     league_users = json.loads(my_league_user_data.text)
     our_db.session.add_all([LeagueUsers(**user) for user in league_users])
 
     print("getting champions")
     #champions table
-    my_champion_data = requests.get("http://paulzplace.asuscomm.com/api/get_champions")
+    my_champion_data = requests.get("http://paulzplace.asuscomm.com/api/get_champions", timeout=200)
     champions = json.loads(my_champion_data.text)
     our_db.session.add_all([Champions(**champ) for champ in champions])
 
     print("getting items")
     # items table
-    my_item_data = requests.get("http://paulzplace.asuscomm.com/api/get_items")
+    my_item_data = requests.get("http://paulzplace.asuscomm.com/api/get_items", timeout=200)
     items = json.loads(my_item_data.text)
     our_db.session.add_all([Items(**item) for item in items])
 
     print("getting json data. Big Oof")
-    my_json_data_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data")
+    my_json_data_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data",\
+            timeout=200)
     json_data = json.loads(my_json_data_data.text)
 
     for row in json_data:
@@ -92,7 +96,7 @@ def main():
 
     print("getting timeline json data. Biggest Oof")
     my_timeline_json_data = requests.get(\
-            "http://paulzplace.asuscomm.com/api/get_timeline_json_data")
+            "http://paulzplace.asuscomm.com/api/get_timeline_json_data", timeout=400)
     timeline_json_data = json.loads(my_timeline_json_data.text)
 
     for row in timeline_json_data:
@@ -141,7 +145,7 @@ def get_player_data(player: str) -> list:
 
     """
     return json.loads(requests.get(\
-            f"http://paulzplace.asuscomm.com/api/get_user_data?name={player}").text)
+            f"http://paulzplace.asuscomm.com/api/get_user_data?name={player}", timeout=200).text)
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.

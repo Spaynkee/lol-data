@@ -11,7 +11,6 @@ python -m unittest resources.python.test.unit.test_lolparser
 
 """
 #pylint: disable=import-error # False positive.
-#pylint: disable=no-self-use # Gotta keep self for unittest
 #pylint: disable=duplicate-code # They're tests, it's fine
 import unittest
 from unittest.mock import Mock, MagicMock

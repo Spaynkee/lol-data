@@ -21,6 +21,8 @@ from classes.models import TeamData, MatchData, ScriptRuns
 
 #pylint: disable=too-many-locals # This is okay.
 #pylint: disable=too-many-statements # This is also okay.
+#pylint: disable=unreachable # we don't want this script run in prod.
+#pylint: disable=unnecessary-list-index-lookup # We do need this.
 class E2e(unittest.TestCase):
     """ Ensures the loldata.py script works exactly as it does in current prod.
         this script compares the data stored in prod with the data stored in test.
@@ -38,7 +40,7 @@ class E2e(unittest.TestCase):
                 config.mongo_name)
 
         # get team data from prod
-        my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data")
+        my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data", timeout=200)
         prod_team_data = json.loads(my_team_data.text)
 
         # get team data from test
@@ -86,7 +88,7 @@ class E2e(unittest.TestCase):
         for user in users:
             print(f"Checking match_data for {user}")
             prod_user_data = json.loads(requests.get(\
-                f"http://paulzplace.asuscomm.com/api/get_user_data?name={user}").text)
+                f"http://paulzplace.asuscomm.com/api/get_user_data?name={user}", timeout=200).text)
 
             test_user_data = our_db.session.query(MatchData).filter_by(player=user).order_by(\
                     MatchData.match_id.desc()).all()
@@ -145,7 +147,7 @@ class E2e(unittest.TestCase):
                 self.assertEqual(str(prod_user_data[i]['perks']), str(test_user_data[i].perks))
 
         print("Checking json_data")
-        my_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data")
+        my_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data", timeout=200)
 
         prod_json_data = json.loads(my_json_data.text)
         test_json_data = list(our_mongo.json.find())
@@ -157,7 +159,8 @@ class E2e(unittest.TestCase):
             self.assertEqual(prod_json_data[i]['json_data'], test_json_data[i]['json_data'])
 
         print("Checking Script Runs")
-        my_runs_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs")
+        my_runs_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs",\
+                timeout=200)
         prod_run_data = json.loads(my_runs_data.text)
         test_run_data = our_db.session.query(ScriptRuns).all()
 
