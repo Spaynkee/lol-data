@@ -21,8 +21,8 @@ class LolDB():
     """
 
     def __init__(self, host, user, pw, name):
-        self.engine = db.create_engine('mysql+pymysql://{}:{}@{}/{}?charset=utf8mb4'.format(user,\
-                pw, host, name), pool_size=100, max_overflow=100)
+        self.engine = db.create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{name}?charset=utf8mb4"\
+                ,pool_size=100, max_overflow=100)
 
         self.connection = self.engine.connect()
         self.metadata = db.MetaData(bind=self.engine)
