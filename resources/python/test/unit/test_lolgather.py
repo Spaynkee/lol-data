@@ -107,7 +107,7 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         self.config = LolConfig()
 
     @patch('requests.get')
-    def test_get_match_data(self, mock_requests, mock_json):
+    def test_get_match_data(self, mock_requests):
         """ Tests that we hit the correct endpoint for getting a players riot id.
 
         """
