@@ -16,7 +16,7 @@ from classes.loldb import LolDB
 from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
 from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData,\
-        LeagueUsers, TimelineJsonData
+        LeagueUsers, JsonTimeline
 
 #pylint: disable=too-many-locals # This is okay.
 #pylint: disable=W0104 # Dropping a collection isn't a useless statement.
@@ -109,7 +109,7 @@ def main():
 
     # cut these after we drop json from sql
     our_db.session.add_all([JsonData(**json) for json in json_data])
-    our_db.session.add_all([TimelineJsonData(**json) for json in timeline_json_data])
+    our_db.session.add_all([JsonTimeline(**json) for json in timeline_json_data])
     our_db.session.commit()
 
 def remove_win(user_data_list):
