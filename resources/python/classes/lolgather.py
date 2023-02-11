@@ -68,7 +68,8 @@ class LolGather():
             try:
                 player_matches_response = requests.get(''.join([self._base_match_url,"by-puuid/",\
                         account_id, "/ids?start=", str(game_index), "&queue=", str(queue_type),\
-                        "&count=", str(index_increment), "&api_key=", self.config.api_key]))
+                        "&count=", str(index_increment), "&api_key=", self.config.api_key]),\
+                        timeout=200)
 
                 player_matches_response.raise_for_status()
                 player_matches_response_list= json.loads(player_matches_response.text)
@@ -115,7 +116,7 @@ class LolGather():
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
             matches_response = requests.get(''.join([self._base_match_url,\
-                    f"NA1_{str(match_id)}", "?api_key=", self.config.api_key]))
+                    f"NA1_{str(match_id)}", "?api_key=", self.config.api_key]), timeout=200)
 
             matches_response.raise_for_status()
             match_json = matches_response.json()
@@ -167,7 +168,8 @@ class LolGather():
 
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
-                    self.account_name_url, account_name, "?api_key=", self.config.api_key]))
+                    self.account_name_url, account_name, "?api_key=", self.config.api_key]),\
+                    timeout=200)
             account_response.raise_for_status()
             account_data = json.loads(account_response.text)
             return account_data['puuid']
@@ -196,7 +198,7 @@ class LolGather():
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
             timeline_response = requests.get(''.join([self._base_match_url, f"NA1_{str(match_id)}",\
-                "/timeline", "?api_key=", self.config.api_key]))
+                "/timeline", "?api_key=", self.config.api_key]), timeout=200)
 
             timeline_response.raise_for_status()
             timeline_json = timeline_response.json()
@@ -222,7 +224,8 @@ class LolGather():
         """
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
-                    self.account_name_url, account_name, "?api_key=", self.config.api_key]))
+                    self.account_name_url, account_name, "?api_key=", self.config.api_key]),\
+                    timeout=200)
             account_response.raise_for_status()
             account_data = json.loads(account_response.text)
             return account_data

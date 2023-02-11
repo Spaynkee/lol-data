@@ -466,9 +466,9 @@ class LolParser():
         enemies = ""
         for participant in participants:
             if participant['teamId'] == team_id:
-                allies += "{}, ".format(self.get_champ_name(participant['championId']))
+                allies += f"{self.get_champ_name(participant['championId'])}"
             else:
-                enemies += "{}, ".format(self.get_champ_name(participant['championId']))
+                enemies += f"{self.get_champ_name(participant['championId'])}"
 
         allies = allies[:-2]
         enemies = enemies[:-2]
@@ -487,7 +487,7 @@ class LolParser():
         list_of_bans = ""
 
         for ban in bans:
-            list_of_bans += "{}, ".format(self.get_champ_name(ban['championId']))
+            list_of_bans += f"{self.get_champ_name(ban['championId'])}"
 
         list_of_bans = list_of_bans[:-2]
         return list_of_bans
@@ -514,7 +514,7 @@ class LolParser():
                     .filter_by(key=participant_stats[item]).first()
 
             if items_row:
-                champ_items += "{}, ".format(items_row.name)
+                champ_items += f"{items_row.name}"
             else:
                 champ_items += "NOT FOUND, " # I may eventually only return slots with items
 
