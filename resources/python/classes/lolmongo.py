@@ -9,6 +9,7 @@ import pymongo
 
 #pylint: disable=too-many-instance-attributes # This should be fine for lolmongo.
 #pylint: disable=too-few-public-methods # also fine for lolmongo.
+#pylint: disable=C0103 # TOODO: change self.db and its references to have a longer name
 class LolMongo():
     """ Contains all the methods and functions needed by lolmongo.py and lolaccount.py
         Attributes:
@@ -21,4 +22,3 @@ class LolMongo():
 
         self.json = self.db.json
         self.timeline_json = self.db.timeline_json
-

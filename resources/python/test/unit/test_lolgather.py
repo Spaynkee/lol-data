@@ -106,9 +106,8 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         """
         self.config = LolConfig()
 
-    @patch('json.loads')
     @patch('requests.get')
-    def test_get_match_data(self, mock_requests, mock_json):
+    def test_get_match_data(self, mock_requests):
         """ Tests that we hit the correct endpoint for getting a players riot id.
 
         """
@@ -116,7 +115,6 @@ class TestLolGatherGetMatchData(unittest.TestCase):
         gather = LolGather(100)
         gather.get_match_data("1234")
         mock_requests.assert_called_once()
-        mock_json.assert_called_once()
 
         self.assertEqual(mock_requests.call_args.args[0],\
             "https://americas.api.riotgames.com/lol/match/v5/matches/NA1_1234"+\

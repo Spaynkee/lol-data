@@ -11,6 +11,7 @@ Example:
     $ python3 loldata.py Manual 3000
 
 """
+#pylint: disable=import-error # False positives
 import json
 import sys
 from classes.lolconfig import LolConfig
@@ -183,7 +184,7 @@ if __name__ == "__main__":
         print("Expected an argument denoting run 'source'. (Manual, test, etc)")
         sys.exit()
 
-    run_source = sys.argv[1]
+    RUN_SOURCE = sys.argv[1]
 
     if len(sys.argv) == 3:
         try:
@@ -192,5 +193,5 @@ if __name__ == "__main__":
             print("Excpeted int for 3rd parameter")
             sys.exit()
 
-    data = LolData(run_source, MAX_INDEX)
+    data = LolData(RUN_SOURCE, MAX_INDEX)
     data.run()
