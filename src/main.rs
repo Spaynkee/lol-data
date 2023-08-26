@@ -56,7 +56,7 @@ async fn league_users() -> std::string::String {
 }
 
 async fn json_data() -> std::string::String {
-    get_json_data()
+    get_json_data().unwrap()
 }
 
 async fn items() -> std::string::String {

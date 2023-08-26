@@ -1,46 +1,47 @@
-use rustc_serialize::json;
-use mysql::prelude::*;
+use mongodb::{
+        sync::Client,
+        error::Result,
+};
 use config::*;
 use std::collections::HashMap;
 
-pub fn get_json_data() -> std::string::String {
+use rustc_serialize::json;
+use serde::{Deserialize, Serialize};
+use serde_json;
 
-        #[derive(Debug, PartialEq, Eq, RustcEncodable)]
-        struct JsonData {
-                match_id: i64,
-                json_data: Option<String>
-        }
+#[derive(Debug, Serialize, Deserialize)]
+struct Json {
+        json_data: String,
+}
 
-        let mut settings = Config::default();
-        settings.merge(File::with_name("config")).unwrap();
-        let conf = settings.try_into::<HashMap<String, String>>().unwrap();
+pub fn get_json_data() -> Result<std::string::String> {
 
-        //Build our connection string
-        let mut url =  String::from("mysql://");
-        url.push_str(conf.get("db_user").unwrap());
-        url.push(':');
-        url.push_str(conf.get("db_password").unwrap());
-        url.push('@');
-        url.push_str(&conf.get("db_id").unwrap());
-        url.push(':');
-        url.push_str("3306");
-        url.push('/');
-        url.push_str(&conf.get("db_name").unwrap());
+    let mut settings = Config::default();
+    settings.merge(File::with_name("config")).unwrap();
+    let conf = settings.try_into::<HashMap<String, String>>().unwrap();
 
-        let pool = mysql::Pool::new(url).unwrap();
-        let mut conn = pool.get_conn().unwrap();
+    let mut url =  String::from("mongodb://");
+    url.push_str(conf.get("mongo_user").unwrap());
+    url.push(':');
+    url.push_str(conf.get("mongo_password").unwrap());
+    url.push('@');
+    url.push_str(conf.get("mongo_db").unwrap());
+                                                                    
 
-        let all_json_data: Vec<JsonData> =
-        conn.query_iter("SELECT * FROM json_data;")
-    .map(|result| {
-        result.map(|x| x.unwrap()).map(|mut row| {
+    let client = Client::with_uri_str(url)?;
+    let db = client.database(conf.get("mongo_name").unwrap());
+    let collection = db.collection::<Json>("json");
 
-        JsonData {
-            match_id: row.take("match_id").unwrap(),
-            json_data: row.take("json_data").unwrap()
-        }
-        }).collect()}).unwrap();
+    // Query the collection and retrieve the documents as a cursor
+    let cursor = collection.find(None, None)?;
 
-        return json::encode(&all_json_data).unwrap();
+    // Iterate through the cursor and convert each document to a JSON string
+    let mut results = Vec::new();
 
+    for result in cursor {
+        let document = result?;
+        results.push(document.json_data);
+    }
+                             
+    return Ok(results.into_iter().collect());
 }
