@@ -2,6 +2,8 @@ use mongodb::{
         sync::Client,
         error::Result,
 };
+use config::*;
+use std::collections::HashMap;
 
 use rustc_serialize::json;
 use serde::{Deserialize, Serialize};
@@ -14,8 +16,20 @@ struct Json {
 
 pub fn get_json_data() -> Result<std::string::String> {
 
-    let client = Client::with_uri_str("mongodb://paul:lalala22@192.168.1.3:27019")?;
-    let db = client.database("lstats_p_mongo");
+    let mut settings = Config::default();
+    settings.merge(File::with_name("config")).unwrap();
+    let conf = settings.try_into::<HashMap<String, String>>().unwrap();
+
+    let mut url =  String::from("mongodb://");
+    url.push_str(conf.get("mongo_user").unwrap());
+    url.push(':');
+    url.push_str(conf.get("mongo_password").unwrap());
+    url.push('@');
+    url.push_str(conf.get("mongo_db").unwrap());
+                                                                    
+
+    let client = Client::with_uri_str(url)?;
+    let db = client.database(conf.get("mongo_name").unwrap());
     let collection = db.collection::<Json>("json");
 
     // Query the collection and retrieve the documents as a cursor
