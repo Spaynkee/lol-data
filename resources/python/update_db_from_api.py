@@ -158,5 +158,5 @@ def get_player_data(player: str) -> list:
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.
-    #sys.exit()
+    sys.exit()
     main()
