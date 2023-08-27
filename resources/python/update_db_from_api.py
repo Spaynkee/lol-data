@@ -34,7 +34,7 @@ def main():
     our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw, config.mongo_name)
 
     for collection in our_mongo.db.list_collection_names():
-        our_mongo.db.drop[collection]
+        our_mongo.db[collection].drop()
 
     our_db.metadata.drop_all(our_db.engine)
     our_db.session.commit()
@@ -84,15 +84,20 @@ def main():
     print("getting json data. Big Oof")
     my_json_data_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data",\
             timeout=200)
+
     json_data = json.loads(my_json_data_data.text)
 
     for row in json_data:
-        if not our_mongo.json.find_one(row['match_id']):
-            a_dict = {'_id': row.match_id,
-                    'json_data': row.json_data}
-            our_mongo.json.insert_one(a_dict)
+        id = ""
+
+        if 'gameId' in row:
+            id = row['gameId']
         else:
-            continue
+            id = row['metadata']['matchId']
+
+        a_dict = {'_id': id,
+                'json_data': json.dumps(row)}
+        our_mongo.json.insert_one(a_dict)
 
     print("getting timeline json data. Biggest Oof")
     my_timeline_json_data = requests.get(\
@@ -100,12 +105,16 @@ def main():
     timeline_json_data = json.loads(my_timeline_json_data.text)
 
     for row in timeline_json_data:
-        if not our_mongo.timeline_json.find_one(row['match_id']):
-            a_dict = {'_id': row.match_id,
-                    'json_data': row.json_data}
-            our_mongo.timeline_json.insert_one(a_dict)
+        id = ""
+
+        if 'gameId' in row:
+            id = row['gameId']
         else:
-            continue
+            id = row['metadata']['matchId']
+
+        a_dict = {'_id': id,
+                'json_timeline': json.dumps(row)}
+        our_mongo.json.insert_one(a_dict)
 
     # cut these after we drop json from sql
     our_db.session.add_all([JsonData(**json) for json in json_data])

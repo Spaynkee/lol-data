@@ -17,7 +17,7 @@ class LolMongo():
     """
 
     def __init__(self, host, user, pw, name=''):
-        mongodb_conn = pymongo.MongoClient(f"mongodb://{user}:{pw}@{host}/admin")
+        mongodb_conn = pymongo.MongoClient(f"mongodb://{user}:{pw}@{host}")
         self.db = mongodb_conn[name]
 
         self.json = self.db.json
