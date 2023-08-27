@@ -42,6 +42,11 @@ pub fn get_timeline_json_data() -> Result<std::string::String> {
         let document = result?;
         results.push(document.json_timeline);
     }
+
+    let mut edited_line = String::new();
+    edited_line.push('[');
+    edited_line.push_str(&results.join(",").to_string());
+    edited_line.push(']');
                              
-    return Ok(results.into_iter().collect());
+    return Ok(edited_line.to_string());
 }
