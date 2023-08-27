@@ -22,6 +22,9 @@ use get_league_users::get_league_users;
 #[path = "apis/get_json_data.rs"] mod get_json_data;
 use get_json_data::get_json_data;
 
+#[path = "apis/get_timeline_json_data.rs"] mod get_timeline_json_data;
+use get_timeline_json_data::get_timeline_json_data;
+
 #[path = "apis/get_items.rs"] mod get_items;
 use get_items::get_items;
 
@@ -57,6 +60,10 @@ async fn league_users() -> std::string::String {
 
 async fn json_data() -> std::string::String {
     get_json_data().unwrap()
+}
+
+async fn timeline_json_data() -> std::string::String {
+    get_timeline_json_data().unwrap()
 }
 
 async fn items() -> std::string::String {
@@ -95,6 +102,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/api/get_script_status").to(script_status))
             .service(web::resource("/api/get_league_users").to(league_users))
             .service(web::resource("/api/get_json_data").to(json_data))
+            .service(web::resource("/api/get_timeline_json_data").to(timeline_json_data))
             .service(web::resource("/api/get_items").to(items))
             .service(web::resource("/api/get_script_runs").to(script_runs))
             .service(web::resource("/api/get_champions").to(champions))
