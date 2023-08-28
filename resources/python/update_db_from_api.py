@@ -93,9 +93,9 @@ def main():
         if 'gameId' in row:
             id = row['gameId']
         else:
-            id = row['metadata']['matchId']
+            id = row['metadata']['matchId'][4:]
 
-        a_dict = {'_id': id,
+        a_dict = {'_id': int(id),
                 'json_data': json.dumps(row)}
         our_mongo.json.insert_one(a_dict)
 
@@ -105,20 +105,12 @@ def main():
     timeline_json_data = json.loads(my_timeline_json_data.text)
 
     for row in timeline_json_data:
-        id = ""
+        id = int(row['metadata']['matchId'][4:])
 
-        if 'gameId' in row:
-            id = row['gameId']
-        else:
-            id = row['metadata']['matchId']
-
-        a_dict = {'_id': id,
+        a_dict = {'_id': int(id),
                 'json_timeline': json.dumps(row)}
-        our_mongo.json.insert_one(a_dict)
+        our_mongo.timeline_json.insert_one(a_dict)
 
-    # cut these after we drop json from sql
-    our_db.session.add_all([JsonData(**json) for json in json_data])
-    our_db.session.add_all([JsonTimeline(**json) for json in timeline_json_data])
     our_db.session.commit()
 
 def remove_win(user_data_list):
