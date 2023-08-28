@@ -254,15 +254,11 @@ class LolParser():
                 json_formatted_string: The actual json data to be stored
         """
         json_doc = self.mongodb.json.find_one({'_id': match})
-        json_row = self.our_db.session.query(JsonData).filter_by(match_id=match).first()
 
-        if not json_doc and not json_row:
+        if not json_doc:
             insert_dict = {'_id': match, 'json_data': json_formatted_string}
             self.mongodb.json.insert_one(insert_dict)
 
-            # leaving sql code in for a week so we are sure everything works.
-            self.our_db.session.add(JsonData(match_id=match, json_data=json_formatted_string))
-            self.our_db.session.commit()
         else:
             self.logger.log_warning("Json already stored.")
 
@@ -275,16 +271,10 @@ class LolParser():
         """
 
         timeline_json_doc = self.mongodb.timeline_json.find_one({'_id': match})
-        json_row = self.our_db.session.query(JsonTimeline).filter_by(match_id=match).first()
 
-        if not timeline_json_doc and not json_row:
+        if not timeline_json_doc:
             insert_dict = {'_id': match, 'json_timeline': json_formatted_string}
             self.mongodb.timeline_json.insert_one(insert_dict)
-
-            # leaving sql code in there for now.
-            self.our_db.session.add(JsonTimeline(match_id=match,\
-                    json_timeline=json_formatted_string))
-            self.our_db.session.commit()
         else:
             self.logger.log_warning("Json already stored for timeline.")
 

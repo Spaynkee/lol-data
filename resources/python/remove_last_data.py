@@ -13,6 +13,7 @@ To that end, this portion of the 'e2e' 'test' removes some data prior to running
 import sys
 import unittest
 from classes.loldb import LolDB
+from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
 from classes.models import TeamData, MatchData, JsonData
 
@@ -31,12 +32,17 @@ class RemoveDB(unittest.TestCase):
         our_db = LolDB(config.db_host, config.db_user, config.db_pw,\
                 config.db_name)
 
+        our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw,\
+                config.mongo_name)
+
         matches_to_remove = []
 
         #getting pre-run data for asserts later.
         pre_team_data = our_db.session.query(TeamData).all()
         pre_match_data = our_db.session.query(MatchData).all()
-        pre_json_data = our_db.session.query(JsonData).all()
+
+        pre_json_data = list(our_mongo.json.find())
+        pre_timeline_data = list(our_mongo.timeline_json.find())
 
         existing_match_history = our_db.session.query(TeamData).order_by(TeamData.match_id.desc())
         matches_to_remove = existing_match_history[:20]
@@ -52,23 +58,32 @@ class RemoveDB(unittest.TestCase):
                         player=particip.strip()).delete()
                 num_matches_removed += 1
 
-
         # then removes all these matches from the team_data and json_data tables.
         for match in matches_to_remove:
-            our_db.session.query(JsonData).filter_by(match_id=match.match_id).delete()
+            our_mongo.json.delete_one({"_id": match.match_id})
+            our_mongo.timeline_json.delete_one({"_id": match.match_id})
+
             our_db.session.query(TeamData).filter_by(match_id=match.match_id).delete()
 
         our_db.session.commit()
 
+        print("Removed matches from json")
+
         # asserts we only removed what we wanted to.
         current_team_data = our_db.session.query(TeamData).order_by(TeamData.match_id.desc()).all()
         current_match_data = our_db.session.query(MatchData).all()
-        current_json_data = our_db.session.query(JsonData).all()
+        
+        print("getting large json, again...")
+        current_json_data = list(our_mongo.json.find())
+        print("getting large timeline json...")
+        current_timeline_data = list(our_mongo.timeline_json.find())
 
-        # asserting we removed exactly 20 rows from team_data
+            
+
         self.assertEqual(len(pre_team_data)-20, len(current_team_data))
         self.assertEqual(len(pre_match_data)-num_matches_removed, len(current_match_data))
         self.assertEqual(len(pre_json_data)-20, len(current_json_data))
+        self.assertEqual(len(pre_timeline_data)-20, len(current_timeline_data))
 
         print("Running data collection script")
 
