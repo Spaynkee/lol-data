@@ -319,7 +319,7 @@ class LolParser():
                 The gold per minute for a player, for this match.
 
         """
-        return participant['goldEarned'] / ((game_duration/1000)/60)
+        return participant['goldEarned'] / (game_duration/60)
 
     @staticmethod
     def get_cs_per_minute(participant: object, game_duration) -> float:
@@ -333,7 +333,7 @@ class LolParser():
                 The cs per minute for a player, for this match.
 
         """
-        return participant['totalMinionsKilled'] / ((game_duration/1000)/60)
+        return participant['totalMinionsKilled'] / (game_duration/60)
 
     @staticmethod
     def get_xp_per_minute(participant: object, game_duration) -> float:
@@ -347,7 +347,7 @@ class LolParser():
                 The xp per minute for a player, for this match.
 
         """
-        return participant['champExperience'] / ((game_duration/1000)/60)
+        return participant['champExperience'] / (game_duration/60)
 
 
     @staticmethod
