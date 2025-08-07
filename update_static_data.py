@@ -15,7 +15,6 @@ from django.db import transaction
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lolData.settings')
 django.setup()
 
-from classes.lolconfig import LolConfig
 from lolData.models import Champions, Items
 
 #pylint: disable=C0103 # columns are named id, which makes the linter angry.
@@ -32,8 +31,6 @@ def main():
         ex: ["3.11.2", "3.9.4","3.12.37"] etc.
 
     """
-
-    config = LolConfig()
 
     version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
     version_res = requests.get(version_url)
