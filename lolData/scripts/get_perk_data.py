@@ -14,9 +14,16 @@
 """
 #pylint: disable=duplicate-code
 import json
+import os
 import requests
 import sqlalchemy as db # type: ignore
-from classes.lolparser import LolParser
+from lolData.management.helpers.lolparser import LolParser
+
+# All scripts should include django settings.
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lolData.settings")
+django.setup()
 
 def main():
     """ main function of get_perk_data

@@ -4,7 +4,14 @@ from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
+
+# All scripts should include django settings.
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lolData.settings")
+django.setup()
+
+load_dotenv()
 
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")

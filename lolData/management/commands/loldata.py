@@ -16,10 +16,10 @@ import json
 import sys
 import os
 from dotenv import load_dotenv
-from .lolparser import LolParser
-from .lolaccount import LolAccount
-from .lolgather import LolGather
-from .lollogger import LolLogger
+from lolData.management.helpers.lolparser import LolParser
+from lolData.management.helpers.lolaccount import LolAccount
+from lolData.management.helpers.lolgather import LolGather
+from lolData.management.helpers.lollogger import LolLogger
 
 load_dotenv()
 

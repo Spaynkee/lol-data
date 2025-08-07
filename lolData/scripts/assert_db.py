@@ -9,14 +9,23 @@ as it does in prod.
 This step of the e2e test happens last, after the script has ran again.
 
 """
+from dotenv import load_dotenv
 import sys
+import os
 import json
 import unittest
 import requests
+import django
 #pylint: disable=import-error # False positives
-from classes.loldb import LolDB
-from classes.lolconfig import LolConfig
-from classes.models import TeamData, MatchData, ScriptRuns
+from lolData.management.helpers.loldb import LolDB
+from lolData.models import TeamData, MatchData, ScriptRuns
+
+load_dotenv()
+
+# All scripts should include django settings.
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lolData.settings")
+django.setup()
 
 #pylint: disable=too-many-locals # This is okay.
 #pylint: disable=too-many-statements # This is also okay.
@@ -37,8 +46,6 @@ class E2e(unittest.TestCase):
         dns = "http://spaynkee.asuscomm.com"
 
         our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
-        our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw,\
-                config.mongo_name)
 
         # get team data from prod
         my_team_data = requests.get(f"{dns}/api/get_team_data", timeout=200)
@@ -148,47 +155,6 @@ class E2e(unittest.TestCase):
                 self.assertEqual(str(prod_user_data[i]['perks']), str(test_user_data[i].perks))
 
         # print("Checking json_data")
-        # my_json_data = requests.get(f"{dns}/api/get_json_data", timeout=200)
-
-        # prod_json_data = list(json.loads(my_json_data.text))
-        # test_json_data = list(our_mongo.json.find().sort("_id", 1))
-
-        # self.assertEqual(len(prod_json_data), len(test_json_data))
-
-        #TODO: Eventually I want to verify the json exactly, but that's tricky right now.
-
-        #for i in range(-1, -21, -1):
-        #    print(prod_json_data[i]['metadata']['matchId'])
-        #    continue
-
-        #    prod_id = prod_json_data[i]['metadata']['matchId']
-        #    test_id = json.loads(test_json_data[i]['json_data'])['metadata']['matchId']
-
-        #    if prod_id != test_id:
-        #        self.fail(f'{prod_id} != {test_id}')
-        #        return
-        #    else:
-        #        print(prod_id)
-        #        continue
-
-        #    self.assertEqual(prod_json_data[i],\
-        #            json.loads(test_json_data[i]['json_data']))
-
-        #return
-
-        # print("Checking timeline_data")
-        # my_timeline_json_data = requests.get(\
-                # f"{dns}/api/get_timeline_json_data",\
-                # timeout=200)
-
-        # prod_timeline_json_data = list(json.loads(my_timeline_json_data.text))
-        # test_timeline_json_data = list(our_mongo.timeline_json.find())
-
-        # self.assertEqual(len(prod_timeline_json_data), len(test_timeline_json_data))
-
-        #for i in range(-21, 0):
-        #    self.assertEqual(prod_timeline_json_data[i],\
-        #            json.loads(test_timeline_json_data[i]['json_timeline']))
 
         print("Checking Script Runs")
         my_runs_data = requests.get(f"{dns}/api/get_script_runs",\
@@ -212,5 +178,5 @@ class E2e(unittest.TestCase):
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.
-    # sys.exit()
+    sys.exit()
     unittest.main()
