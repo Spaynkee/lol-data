@@ -1,9 +1,10 @@
-""" lolparser.py class
+"""lolparser.py class
 
 This class contains all the methods needed to store and retrieve league of legends
 data to or from our databases. It handles all db transactions during the script run.
 
 """
+
 import time
 import os
 from dotenv import load_dotenv
@@ -12,48 +13,55 @@ from datetime import datetime as date
 from django.db import transaction
 from .lollogger import LolLogger
 from lolData.models import (
-    MatchData, TeamData, LeagueUsers, ScriptRuns, Champions, 
-    Items, JsonData, JsonTimeline
+    MatchData,
+    TeamData,
+    LeagueUsers,
+    ScriptRuns,
+    Champions,
+    Items,
+    JsonData,
+    JsonTimeline,
 )
 
 load_dotenv()
 
-#pylint: disable=too-many-public-methods # No way around this one right now. Maybe a refactor later
-class LolParser():
-    """ Contains all the methods and functions needed by loldata.py and classes/lolaccount.py
-        to store data into the database.
+
+# pylint: disable=too-many-public-methods # No way around this one right now. Maybe a refactor later
+class LolParser:
+    """Contains all the methods and functions needed by loldata.py and classes/lolaccount.py
+    to store data into the database.
     """
 
     def __init__(self):
         self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))
 
     def select_previous_match_data_rows(self, account_name: str) -> list:
-        """ Gets the matches we already have in match_data and returns the match data as a list
+        """Gets the matches we already have in match_data and returns the match data as a list
 
-            Args:
-                account_name: the name of the player we're getting matches for
+        Args:
+            account_name: the name of the player we're getting matches for
 
-            Returns:
-                A list of match_data row objects
+        Returns:
+            A list of match_data row objects
 
         """
 
         return list(MatchData.objects.filter(player=account_name))
 
     def select_previous_team_data_rows(self) -> list:
-        """ Gets the matches we already have in team_data and returns a list of row objects
+        """Gets the matches we already have in team_data and returns a list of row objects
 
-            Returns:
-                A list of team_data row objects
+        Returns:
+            A list of team_data row objects
 
         """
         return list(TeamData.objects.all())
 
     def get_previous_team_data_match_ids(self) -> list:
-        """ Creates and Returns a list of the match_ids already in team_data
+        """Creates and Returns a list of the match_ids already in team_data
 
-            Returns:
-                A list of integers containing all match_ids currently in team_data
+        Returns:
+            A list of integers containing all match_ids currently in team_data
         """
         team_data_match_history = self.select_previous_team_data_rows()
         previous_team_data_matches = []
@@ -64,17 +72,16 @@ class LolParser():
         return previous_team_data_matches
 
     def get_previous_player_match_data_ids(self, name: str) -> list:
-        """ Creates and returns a list containing all the match_ids for each row in match_data
+        """Creates and returns a list containing all the match_ids for each row in match_data
 
-            Args:
-                name: the name of the player we're getting match_data_for
+        Args:
+            name: the name of the player we're getting match_data_for
 
-            Return:
-                A list of integers containing all match_ids currently stored for this player
+        Return:
+            A list of integers containing all match_ids currently stored for this player
         """
         player_match_history = self.select_previous_match_data_rows(name)
         previous_player_matches = []
-
 
         for match in player_match_history:
             previous_player_matches.append(match.match_id)
@@ -82,57 +89,63 @@ class LolParser():
         return previous_player_matches
 
     @transaction.atomic
-    def insert_match_data_row(self, match_data: dict, account_name: str,\
-            account_id: str):
+    def insert_match_data_row(
+        self, match_data: dict, account_name: str, account_id: str
+    ):
+        """Parses through a large dict and inserts data into the match_data table.
 
-        """ Parses through a large dict and inserts data into the match_data table.
-
-            Args:
-                match_data: a large dict containing all the match data
-                account_name: the player we're updating for
-                account_id: the id of the player so we can determine participant index
+        Args:
+            match_data: a large dict containing all the match data
+            account_name: the player we're updating for
+            account_id: the id of the player so we can determine participant index
 
         """
         # This object will store all the data we intend to save.
         match_obj = MatchData()
-        match_data = match_data['info']
+        match_data = match_data["info"]
 
-        participant_index = self.get_participant_index(match_data['participants'],\
-                account_id)
+        participant_index = self.get_participant_index(
+            match_data["participants"], account_id
+        )
 
-        match_obj.match_id = match_data['gameId']
+        match_obj.match_id = match_data["gameId"]
         match_obj.player = account_name
 
-        participant = match_data['participants'][participant_index]
-        match_obj.champion = participant['championId']
+        participant = match_data["participants"][participant_index]
+        match_obj.champion = participant["championId"]
 
-        match_obj.kills = participant['kills']
-        match_obj.deaths = participant['deaths']
-        match_obj.assists = participant['assists']
-        match_obj.wards_placed = participant['wardsPlaced']
-        match_obj.damage_to_champs = participant['totalDamageDealtToChampions']
-        match_obj.damage_to_turrets = participant['damageDealtToTurrets']
-        match_obj.vision_wards_bought = participant['visionWardsBoughtInGame']
-        match_obj.wards_killed = participant['wardsKilled']
+        match_obj.kills = participant["kills"]
+        match_obj.deaths = participant["deaths"]
+        match_obj.assists = participant["assists"]
+        match_obj.wards_placed = participant["wardsPlaced"]
+        match_obj.damage_to_champs = participant["totalDamageDealtToChampions"]
+        match_obj.damage_to_turrets = participant["damageDealtToTurrets"]
+        match_obj.vision_wards_bought = participant["visionWardsBoughtInGame"]
+        match_obj.wards_killed = participant["wardsKilled"]
 
-        match_obj.champion_name = self.get_champ_name(participant['championId'])
+        match_obj.champion_name = self.get_champ_name(participant["championId"])
 
-        match_obj.first_blood, match_obj.first_blood_assist =\
-                self.get_first_blood_kill_assist(participant)
+        match_obj.first_blood, match_obj.first_blood_assist = (
+            self.get_first_blood_kill_assist(participant)
+        )
 
         role = self.get_role(participant)
 
         match_obj.role = role
 
-        match_obj.gold_per_minute = self.get_gold_per_minute(participant,\
-                match_data['gameDuration'])
-        match_obj.creeps_per_minute = self.get_cs_per_minute(participant,\
-                match_data['gameDuration'])
-        match_obj.xp_per_minute = self.get_xp_per_minute(participant,\
-                match_data['gameDuration'])
+        match_obj.gold_per_minute = self.get_gold_per_minute(
+            participant, match_data["gameDuration"]
+        )
+        match_obj.creeps_per_minute = self.get_cs_per_minute(
+            participant, match_data["gameDuration"]
+        )
+        match_obj.xp_per_minute = self.get_xp_per_minute(
+            participant, match_data["gameDuration"]
+        )
 
-        match_obj.enemy_champion, match_obj.enemy_champion_name  = self.get_enemy_champ(role,\
-                participant_index, match_data['participants'])
+        match_obj.enemy_champion, match_obj.enemy_champion_name = self.get_enemy_champ(
+            role, participant_index, match_data["participants"]
+        )
 
         match_obj.items = self.get_items(participant)
         match_obj.perks = self.get_perks(participant)
@@ -140,13 +153,15 @@ class LolParser():
         match_obj.save()
 
     @transaction.atomic
-    def insert_team_data_row(self, match_data: dict, account_name: str, account_id: str):
-        """ Goes through a match_data dict, parses out information, and stores into team_data table
+    def insert_team_data_row(
+        self, match_data: dict, account_name: str, account_id: str
+    ):
+        """Goes through a match_data dict, parses out information, and stores into team_data table
 
-            Args:
-                match_data: a large dict containing match data from riot api
-                account_name: the name of the player we're storing games for
-                account_id: the id of the player we're storing games for
+        Args:
+            match_data: a large dict containing match data from riot api
+            account_name: the name of the player we're storing games for
+            account_id: the id of the player we're storing games for
 
         """
 
@@ -154,149 +169,147 @@ class LolParser():
         team_data, enemy_team_data, team_id = self.get_team_data(match_data, account_id)
         team_obj = TeamData()
 
-        match_data = match_data['info']
+        match_data = match_data["info"]
         # get some team information.
         team_obj.participants = account_name
 
-        if team_data['win']:
-            team_obj.win = 'Win'
+        if team_data["win"]:
+            team_obj.win = "Win"
         else:
-            team_obj.win = 'Fail'
+            team_obj.win = "Fail"
 
-        objectives = team_data['objectives']
+        objectives = team_data["objectives"]
 
-        team_obj.first_blood = objectives['champion']['first']
-        team_obj.first_baron = objectives['baron']['first']
-        team_obj.first_tower = objectives['tower']['first']
-        team_obj.first_rift_herald = objectives['riftHerald']['first']
-        team_obj.first_dragon = objectives['dragon']['first']
-        team_obj.first_inhib = objectives['inhibitor']['first']
+        team_obj.first_blood = objectives["champion"]["first"]
+        team_obj.first_baron = objectives["baron"]["first"]
+        team_obj.first_tower = objectives["tower"]["first"]
+        team_obj.first_rift_herald = objectives["riftHerald"]["first"]
+        team_obj.first_dragon = objectives["dragon"]["first"]
+        team_obj.first_inhib = objectives["inhibitor"]["first"]
 
-        team_obj.ally_rift_herald_kills = objectives['riftHerald']['kills']
-        team_obj.ally_dragon_kills = objectives['dragon']['kills']
-        team_obj.inhib_kills = objectives['inhibitor']['kills']
+        team_obj.ally_rift_herald_kills = objectives["riftHerald"]["kills"]
+        team_obj.ally_dragon_kills = objectives["dragon"]["kills"]
+        team_obj.inhib_kills = objectives["inhibitor"]["kills"]
 
-        team_obj.game_version = match_data['gameVersion']
-        team_obj.match_id = match_data['gameId']
+        team_obj.game_version = match_data["gameVersion"]
+        team_obj.match_id = match_data["gameId"]
 
         # sometimes we need enemy info too.
-        enemy_objectives = enemy_team_data['objectives']
-        team_obj.enemy_dragon_kills = enemy_objectives['dragon']['kills']
-        team_obj.enemy_rift_herald_kills = enemy_objectives['riftHerald']['kills']
+        enemy_objectives = enemy_team_data["objectives"]
+        team_obj.enemy_dragon_kills = enemy_objectives["dragon"]["kills"]
+        team_obj.enemy_rift_herald_kills = enemy_objectives["riftHerald"]["kills"]
 
-        team_obj.bans = self.get_team_bans(team_data['bans'])
-        team_obj.enemy_bans = self.get_team_bans(enemy_team_data['bans'])
+        team_obj.bans = self.get_team_bans(team_data["bans"])
+        team_obj.enemy_bans = self.get_team_bans(enemy_team_data["bans"])
 
-        team_obj.allies, team_obj.enemies = self.get_allies_and_enemies(team_id,\
-                match_data['participants'])
+        team_obj.allies, team_obj.enemies = self.get_allies_and_enemies(
+            team_id, match_data["participants"]
+        )
 
-        team_obj.start_time, team_obj.duration = self.get_start_time_and_duration(\
-                match_data['gameCreation'], match_data['gameDuration'])
+        team_obj.start_time, team_obj.duration = self.get_start_time_and_duration(
+            match_data["gameCreation"], match_data["gameDuration"]
+        )
 
         team_obj.save()
 
     @transaction.atomic
     def update_team_data_row(self, match: int, account_name: str):
-        """ if the match we're trying to insert into team_data already exists, we update the
-            participants field instead, since our current player was in the game with
-            a previous player.
+        """if the match we're trying to insert into team_data already exists, we update the
+        participants field instead, since our current player was in the game with
+        a previous player.
 
-            Args:
-                match: the match_id we're updating
-                account_name: the player we're updating the table for
+        Args:
+            match: the match_id we're updating
+            account_name: the player we're updating the table for
 
         """
 
         existing_team_data_row = TeamData.objects.get(match_id=match)
 
-        existing_team_data_row.participants = \
-                f"{existing_team_data_row.participants}, {account_name}"
+        existing_team_data_row.participants = (
+            f"{existing_team_data_row.participants}, {account_name}"
+        )
 
         existing_team_data_row.save()
 
     @staticmethod
     def get_participant_index(participant_identities: dict, puuid: str) -> int:
-        """ Gets a participants index based on their puuid
+        """Gets a participants index based on their puuid
 
-            Args:
-                participant_identities: a dictionary containing all 10 players identities
-                puuid: the puuid of the player we're getting the index of
+        Args:
+            participant_identities: a dictionary containing all 10 players identities
+            puuid: the puuid of the player we're getting the index of
 
-            Returns:
-                The index of our accounts participant
+        Returns:
+            The index of our accounts participant
 
         """
         for index, player in enumerate(participant_identities):
-            if player['puuid'] == puuid:
+            if player["puuid"] == puuid:
                 return index
 
         return -1
 
     def get_summoner_names(self) -> list:
-        """ Creates and returns a list of summoner names that we have stored in the league_users
-            table.
+        """Creates and returns a list of summoner names that we have stored in the league_users
+        table.
 
-            Returns:
-                A list of names stored in the league_users table
+        Returns:
+            A list of names stored in the league_users table
         """
 
         league_users = LeagueUsers.objects.all()
         return [user.summoner_name for user in league_users]
 
-
     def store_json_data(self, match: int, json_formatted_string: str):
-        """ Stores the json data for a single match into the json_data table.
+        """Stores the json data for a single match into the json_data table.
 
-            Args:
-                match: The match id we're storing data for
-                json_formatted_string: The actual json data to be stored
+        Args:
+            match: The match id we're storing data for
+            json_formatted_string: The actual json data to be stored
         """
         json_obj, created = JsonData.objects.get_or_create(
-            match_id=match,
-            defaults={'json_data': json_formatted_string}
+            match_id=match, defaults={"json_data": json_formatted_string}
         )
-        
+
         if not created:
             self.logger.log_warning("Json already stored.")
 
     def store_json_timeline(self, match: int, json_formatted_string: str):
-        """ Stores the json data for a match timeline into the json_timeline table.
+        """Stores the json data for a match timeline into the json_timeline table.
 
-            Args:
-                match: The match id we're storing data for
-                json_formatted_string: The actual json data to be stored
+        Args:
+            match: The match id we're storing data for
+            json_formatted_string: The actual json data to be stored
         """
 
         timeline_obj, created = JsonTimeline.objects.get_or_create(
-            match_id=match,
-            defaults={'json_timeline': json_formatted_string}
+            match_id=match, defaults={"json_timeline": json_formatted_string}
         )
-        
+
         if not created:
             self.logger.log_warning("Json already stored for timeline.")
 
     @transaction.atomic
     def store_run_info(self, source: str):
-        """ Creates a new row in the script_runs table
+        """Creates a new row in the script_runs table
 
-            Args:
-                source: The source of the script run (Daily, Manual, ManualWeb)
+        Args:
+            source: The source of the script run (Daily, Manual, ManualWeb)
         """
         time_started = date.now().strftime("%Y-%m-%d %H:%M:%S")
         ScriptRuns.objects.create(
-            source=source, 
-            start_time=time_started, 
-            status="Running"
+            source=source, start_time=time_started, status="Running"
         )
 
     @transaction.atomic
     def update_run_info(self, status: str, matches: str, message: str):
-        """ Updates the currently running row in script_runs
+        """Updates the currently running row in script_runs
 
-            Args:
-                status:  The status of the run (Failed, Success)
-                matches: A string containing all the matches that were added by this script run
-                message: Any message explaining the status of the run (exception if failed, etc)
+        Args:
+            status:  The status of the run (Failed, Success)
+            matches: A string containing all the matches that were added by this script run
+            message: Any message explaining the status of the run (exception if failed, etc)
 
         """
 
@@ -310,60 +323,59 @@ class LolParser():
 
     @staticmethod
     def get_gold_per_minute(participant: object, game_duration) -> int:
-        """ Gets the gold per minute for a player based on their gold earned.
+        """Gets the gold per minute for a player based on their gold earned.
 
-            Args:
-                participant: A participant object from riot.
-                game_duration: The length of the game in milliseconds.
+        Args:
+            participant: A participant object from riot.
+            game_duration: The length of the game in milliseconds.
 
-            Returns:
-                The gold per minute for a player, for this match.
+        Returns:
+            The gold per minute for a player, for this match.
 
         """
-        return participant['goldEarned'] / (game_duration/60)
+        return participant["goldEarned"] / (game_duration / 60)
 
     @staticmethod
     def get_cs_per_minute(participant: object, game_duration) -> float:
-        """ Gets the cs per minute for a player based on their minions earned.
+        """Gets the cs per minute for a player based on their minions earned.
 
-            Args:
-                participant: A participant object from riot.
-                game_duration: The length of the game in milliseconds.
+        Args:
+            participant: A participant object from riot.
+            game_duration: The length of the game in milliseconds.
 
-            Returns:
-                The cs per minute for a player, for this match.
+        Returns:
+            The cs per minute for a player, for this match.
 
         """
-        return participant['totalMinionsKilled'] / (game_duration/60)
+        return participant["totalMinionsKilled"] / (game_duration / 60)
 
     @staticmethod
     def get_xp_per_minute(participant: object, game_duration) -> float:
-        """ Gets the xp per minute for a player based on their gold earned.
+        """Gets the xp per minute for a player based on their gold earned.
 
-            Args:
-                participant: A participant object from riot.
-                game_duration: The length of the game in milliseconds.
+        Args:
+            participant: A participant object from riot.
+            game_duration: The length of the game in milliseconds.
 
-            Returns:
-                The xp per minute for a player, for this match.
+        Returns:
+            The xp per minute for a player, for this match.
 
         """
-        return participant['champExperience'] / (game_duration/60)
-
+        return participant["champExperience"] / (game_duration / 60)
 
     @staticmethod
     def get_role(participant: dict) -> str:
-        """ Gets a players role
+        """Gets a players role
 
-            Args:
-                participant: a participants stats
+        Args:
+            participant: a participants stats
 
-            Returns:
-                The role the player queue'd for.
+        Returns:
+            The role the player queue'd for.
 
         """
 
-        role = participant['teamPosition']
+        role = participant["teamPosition"]
         if role == "UTILITY":
             role = "SUPPORT"
 
@@ -374,16 +386,16 @@ class LolParser():
 
     @staticmethod
     def get_enemy_champ(role: str, p_index: int, participants: dict) -> Tuple[int, str]:
-        """ Gets the lane opponents champion for a player.
+        """Gets the lane opponents champion for a player.
 
-            Args:
-                role: a string denoting our role. TOP, JUNGLE, BOTTOM, etc.
-                p_index: the index of our participant dict
-                participants: A large dictionary of the games participants, whos keys are ints
+        Args:
+            role: a string denoting our role. TOP, JUNGLE, BOTTOM, etc.
+            p_index: the index of our participant dict
+            participants: A large dictionary of the games participants, whos keys are ints
 
-            Returns:
-                A tuple containing the id and name of the champion that was played by our lane
-                opponent.
+        Returns:
+            A tuple containing the id and name of the champion that was played by our lane
+            opponent.
 
         """
 
@@ -391,30 +403,35 @@ class LolParser():
         if role == "SUPPORT":
             role = "UTILITY"
 
-        our_team_id = participants[p_index]['teamId']
+        our_team_id = participants[p_index]["teamId"]
 
         for participant in participants:
-            if participant['teamId'] != our_team_id and participant['teamPosition'] == role:
-                return participant['championId'], participant['championName']
+            if (
+                participant["teamId"] != our_team_id
+                and participant["teamPosition"] == role
+            ):
+                return participant["championId"], participant["championName"]
 
         return -1, ""
 
     @staticmethod
-    def get_start_time_and_duration(game_create_time: float, game_duration: float) -> Tuple:
-        """ Gets the start time and duration of an individual match
+    def get_start_time_and_duration(
+        game_create_time: float, game_duration: float
+    ) -> Tuple:
+        """Gets the start time and duration of an individual match
 
-            Args:
-                game_create_time: a float value of the game creation time
-                game_duration: a float value of the game duration
+        Args:
+            game_create_time: a float value of the game creation time
+            game_duration: a float value of the game duration
 
-            Returns:
-                A Tuple containing the start_time and duration converted from MS
+        Returns:
+            A Tuple containing the start_time and duration converted from MS
         """
         start_t = game_create_time
 
         # Creation includes miliseconds which we don't care about.
         start_t = start_t / 1000
-        start_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_t))
+        start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_t))
 
         # Duration might go over an hour, so I have to use a check for presentability's sake
         if game_duration >= 3600:
@@ -425,13 +442,13 @@ class LolParser():
         return start_time, duration
 
     def get_champ_name(self, champ_id: int) -> str:
-        """ Gets the champ name from the champions table using their champ_id
+        """Gets the champ name from the champions table using their champ_id
 
-            Args:
-                champ_id: The integer value of the champion we're getting the name of
+        Args:
+            champ_id: The integer value of the champion we're getting the name of
 
-            Returns:
-                The champions name, or None, if the passed champ_id was -1 (no champ)
+        Returns:
+            The champions name, or None, if the passed champ_id was -1 (no champ)
 
         """
 
@@ -442,21 +459,23 @@ class LolParser():
 
         return "None"
 
-    def get_allies_and_enemies(self, team_id: int, participants: list) -> Tuple[str, str]:
-        """ Creates a list of allied and enemy champs played in a particular match.
+    def get_allies_and_enemies(
+        self, team_id: int, participants: list
+    ) -> Tuple[str, str]:
+        """Creates a list of allied and enemy champs played in a particular match.
 
-            Args:
-                team_id: An integer denoting what team we were on (100 or 200)
-                participants: A list of participant objects from riot api
+        Args:
+            team_id: An integer denoting what team we were on (100 or 200)
+            participants: A list of participant objects from riot api
 
-            Returns:
-                A tuple containing all of the allied and enemy champions.
+        Returns:
+            A tuple containing all of the allied and enemy champions.
 
         """
         allies = ""
         enemies = ""
         for participant in participants:
-            if participant['teamId'] == team_id:
+            if participant["teamId"] == team_id:
                 allies += f"{self.get_champ_name(participant['championId'])}, "
             else:
                 enemies += f"{self.get_champ_name(participant['championId'])}, "
@@ -467,13 +486,13 @@ class LolParser():
         return allies, enemies
 
     def get_team_bans(self, bans: list) -> str:
-        """ Builds a list of a teams banned champions using that teams ban list
+        """Builds a list of a teams banned champions using that teams ban list
 
-            Args:
-                bans: a list containing ban dicts
+        Args:
+            bans: a list containing ban dicts
 
-            Returns:
-                A string containing all of the banned champions for a team
+        Returns:
+            A string containing all of the banned champions for a team
         """
         list_of_bans = ""
 
@@ -484,16 +503,16 @@ class LolParser():
         return list_of_bans
 
     def get_items(self, participant_stats: dict) -> str:
-        """ Builds a string containing all of the items purchased by a participant
+        """Builds a string containing all of the items purchased by a participant
 
-            Args:
-                participant_stats: a dictionary containing all of a participants stats
+        Args:
+            participant_stats: a dictionary containing all of a participants stats
 
-            Returns:
-                A string of item names
+        Returns:
+            A string of item names
         """
         champ_items = ""
-        items = ['item0', 'item1', 'item2', 'item3', 'item4', 'item5', 'item6']
+        items = ["item0", "item1", "item2", "item3", "item4", "item5", "item6"]
 
         for item in items:
 
@@ -506,7 +525,9 @@ class LolParser():
             if items_row:
                 champ_items += f"{items_row.name}, "
             else:
-                champ_items += "NOT FOUND, " # I may eventually only return slots with items
+                champ_items += (
+                    "NOT FOUND, "  # I may eventually only return slots with items
+                )
 
         champ_items = champ_items[:-2]
 
@@ -514,16 +535,16 @@ class LolParser():
 
     @staticmethod
     def get_perks(participant_stats: dict) -> str:
-        """ This function creates a string of perk ids. TODO: Get perk name from db when we can.
+        """This function creates a string of perk ids. TODO: Get perk name from db when we can.
 
-            Args:
-                participant_stats: A dict from riot games containing stats info
+        Args:
+            participant_stats: A dict from riot games containing stats info
 
-            Returns:
-                A string of perk ids
+        Returns:
+            A string of perk ids
         """
         champ_perks = ""
-        perks = ['perk0', 'perk1', 'perk2', 'perk3', 'perk4', 'perk5']
+        perks = ["perk0", "perk1", "perk2", "perk3", "perk4", "perk5"]
         for perk in perks:
             if perk in participant_stats:
                 champ_perks += f"{participant_stats[perk]}, "
@@ -531,72 +552,74 @@ class LolParser():
         champ_perks = champ_perks[:-2]
         return champ_perks
 
-    def get_team_data(self, match_data: dict, account_id: str) -> Tuple[Dict, Dict, int]:
-        """ Returns Team data for both teams, as well as the team_id for both teams
+    def get_team_data(
+        self, match_data: dict, account_id: str
+    ) -> Tuple[Dict, Dict, int]:
+        """Returns Team data for both teams, as well as the team_id for both teams
 
-            Args:
-                match_data: A dict containing lots of data about our match
-                account_id: the account id of the player we're getting the team data of
+        Args:
+            match_data: A dict containing lots of data about our match
+            account_id: the account id of the player we're getting the team data of
 
-            Returns:
-                team_data: our teams data from this match
-                enemy_team-data: enemy teams data from this match
-                team_id: our teams team_id
+        Returns:
+            team_data: our teams data from this match
+            enemy_team-data: enemy teams data from this match
+            team_id: our teams team_id
         """
 
-        match_data = match_data['info']
+        match_data = match_data["info"]
 
-        participant_index = self.get_participant_index(match_data['participants'],\
-                account_id)
+        participant_index = self.get_participant_index(
+            match_data["participants"], account_id
+        )
 
-        participant = match_data['participants'][participant_index]
+        participant = match_data["participants"][participant_index]
 
-        team_id = participant['teamId']
+        team_id = participant["teamId"]
 
         if team_id == 100:
-            team_data = match_data['teams'][0]
-            enemy_team_data = match_data['teams'][1]
+            team_data = match_data["teams"][0]
+            enemy_team_data = match_data["teams"][1]
         elif team_id == 200:
-            team_data = match_data['teams'][1]
-            enemy_team_data = match_data['teams'][0]
+            team_data = match_data["teams"][1]
+            enemy_team_data = match_data["teams"][0]
 
         return team_data, enemy_team_data, team_id
 
-
     @staticmethod
     def get_first_blood_kill_assist(stats: dict) -> Tuple[int, int]:
-        """ Returns integers denoting if a participant was involved in a first blood. If a
-            participant was not involved, these keys do not exist.
+        """Returns integers denoting if a participant was involved in a first blood. If a
+        participant was not involved, these keys do not exist.
 
-            Args:
-                stats: a large dictionary object containing a ton of stats
+        Args:
+            stats: a large dictionary object containing a ton of stats
 
-            Returns:
-                Two integers denoting if this participant was (1) or was not (0) part of fb
+        Returns:
+            Two integers denoting if this participant was (1) or was not (0) part of fb
 
         """
 
-        if 'firstBloodKill' in stats:
-            first_blood_kill = stats['firstBloodKill']
+        if "firstBloodKill" in stats:
+            first_blood_kill = stats["firstBloodKill"]
         else:
             first_blood_kill = 0
 
-        if 'firstBloodAssist' in stats:
-            first_blood_assist = stats['firstBloodAssist']
+        if "firstBloodAssist" in stats:
+            first_blood_assist = stats["firstBloodAssist"]
         else:
             first_blood_assist = 0
 
         return int(first_blood_kill), int(first_blood_assist)
 
     def get_account_id(self, account_name: str) -> str:
-        """ Gets the account ID we have for this username that we have stored in the league
-            users table.
+        """Gets the account ID we have for this username that we have stored in the league
+        users table.
 
-            Args:
-                account_name: the account name we're getting the puuid for
+        Args:
+            account_name: the account name we're getting the puuid for
 
-            Returns:
-                The puuid associated with this account from the database.
+        Returns:
+            The puuid associated with this account from the database.
         """
 
         user_row = LeagueUsers.objects.filter(summoner_name=account_name).first()
@@ -605,11 +628,11 @@ class LolParser():
 
     @transaction.atomic
     def store_puuid(self, account_name: str, puuid: str):
-        """ Stores a puuid into an league user row for a particiular account_name
+        """Stores a puuid into an league user row for a particiular account_name
 
-            Args:
-                account_name: the account name we're storing the puuid for
-                puuid:        the puuid we're storing.
+        Args:
+            account_name: the account name we're storing the puuid for
+            puuid:        the puuid we're storing.
 
         """
         league_user = LeagueUsers.objects.filter(summoner_name=account_name).first()
@@ -620,14 +643,14 @@ class LolParser():
 
     @transaction.atomic
     def store_league_user(self, account_data):
-        """ Stores a puuid into an league user row for a particiular account_name
+        """Stores a puuid into an league user row for a particiular account_name
 
-            Args:
-                account_data: Account data from riot games
+        Args:
+            account_data: Account data from riot games
 
         """
         LeagueUsers.objects.create(
-            puuid=account_data['puuid'],
-            summoner_name=account_data['name'],
-            riot_id=account_data['accountId']
+            puuid=account_data["puuid"],
+            summoner_name=account_data["name"],
+            riot_id=account_data["accountId"],
         )

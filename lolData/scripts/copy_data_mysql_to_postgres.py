@@ -21,7 +21,9 @@ DB_NAME = os.getenv("DB_NAME")
 
 # MySQL and PostgreSQL connection URIs
 MYSQL_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:3306/{DB_NAME}"
-POSTGRES_URI = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+POSTGRES_URI = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
 
 # Create engines
 mysql_engine = create_engine(MYSQL_URI)

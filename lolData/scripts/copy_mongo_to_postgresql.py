@@ -6,12 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Load .env file into environment variables
 
+
 def copy_mongo_to_postgres(
-    mongo_collection,
-    json_field_name,
-    pg_table,
-    pg_conn,
-    id_field="match_id"
+    mongo_collection, json_field_name, pg_table, pg_conn, id_field="match_id"
 ):
     pg_cursor = pg_conn.cursor()
 
@@ -57,7 +54,7 @@ pg_conn = psycopg2.connect(
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
     host=os.getenv("DB_HOST"),
-    port=int(os.getenv("DB_PORT"))
+    port=int(os.getenv("DB_PORT")),
 )
 
 # === Run the copies ===
@@ -65,14 +62,14 @@ copy_mongo_to_postgres(
     mongo_collection=timeline_collection,
     json_field_name="json_timeline",
     pg_table="json_timeline",
-    pg_conn=pg_conn
+    pg_conn=pg_conn,
 )
 
 copy_mongo_to_postgres(
     mongo_collection=data_collection,
     json_field_name="json_data",
     pg_table="json_data",
-    pg_conn=pg_conn
+    pg_conn=pg_conn,
 )
 
 # === Cleanup ===

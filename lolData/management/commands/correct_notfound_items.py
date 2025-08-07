@@ -5,13 +5,13 @@ from lolData.models import MatchData, JsonData, Items
 
 
 class Command(BaseCommand):
-    help = "Corrects 'NOT FOUND' items in match_data by looking up item IDs in json_data."
+    help = (
+        "Corrects 'NOT FOUND' items in match_data by looking up item IDs in json_data."
+    )
 
     def handle(self, *args, **options):
-        matches = (
-            MatchData.objects
-            .filter(items__icontains="NOT FOUND")
-            .values_list("match_id", "player", "id")
+        matches = MatchData.objects.filter(items__icontains="NOT FOUND").values_list(
+            "match_id", "player", "id"
         )
 
         match_count = matches.count()
@@ -38,14 +38,19 @@ class Command(BaseCommand):
         """Get item IDs for the given match and summoner from json_data."""
         json_row = JsonData.objects.filter(match_id=match_id).first()
         if not json_row:
-            self.stdout.write(self.style.WARNING(f"No JSON data for {match_id}, skipping."))
+            self.stdout.write(
+                self.style.WARNING(f"No JSON data for {match_id}, skipping.")
+            )
             return None
 
         data = json.loads(json_row.json_data)
         participant_id = next(
-            (p["participantId"] for p in data["participantIdentities"]
-             if p["player"]["summonerName"].lower() == summoner.lower()),
-            None
+            (
+                p["participantId"]
+                for p in data["participantIdentities"]
+                if p["player"]["summonerName"].lower() == summoner.lower()
+            ),
+            None,
         )
         if not participant_id:
             return None

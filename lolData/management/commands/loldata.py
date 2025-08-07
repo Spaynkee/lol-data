@@ -1,4 +1,4 @@
-""" loldata.py
+"""loldata.py
 
 This script is the main script for the collection of data as part of
 the loldat project. It creates instances of the LolAccount class for each of the accounts
@@ -11,7 +11,8 @@ Example:
     $ python3 loldata.py Manual 3000
 
 """
-#pylint: disable=import-error # False positives
+
+# pylint: disable=import-error # False positives
 import json
 import sys
 import os
@@ -20,47 +21,46 @@ from lolData.management.helpers.lolparser import LolParser
 from lolData.management.helpers.lolaccount import LolAccount
 from lolData.management.helpers.lolgather import LolGather
 from lolData.management.helpers.lollogger import LolLogger
+from django.core.management.base import BaseCommand
 
 load_dotenv()
 
-
-from django.core.management.base import BaseCommand
 
 class Command(BaseCommand):
     help = "Your command description"
 
     def add_arguments(self, parser):
-        parser.add_argument('source', type=str)
-        parser.add_argument('max_index', nargs='?', type=int, default=200)
+        parser.add_argument("source", type=str)
+        parser.add_argument("max_index", nargs="?", type=int, default=200)
 
     def handle(self, *args, **options):
-        source = options['source']
-        max_index = options['max_index']
+        source = options["source"]
+        max_index = options["max_index"]
 
         data = LolData(source, max_index)
         data.run()
 
 
-class LolData():
-    """ Makes use of several other classes to download and store league of legends data.
-        This class functions as the main data collection script.
+class LolData:
+    """Makes use of several other classes to download and store league of legends data.
+    This class functions as the main data collection script.
 
-        Attributes:
-            config   (obj):  An instance of the config class. Used to get the log file name.
-            parser   (obj):  An instance of the parser class. Used in several places.
-            gatherer (obj):  An instance of the gather class. Used to get data from riots api.
-            logger   (obj):  An instance of the logger class. used to log info to a log file.
-            account_list (list: obj): A list of account class objects.
+    Attributes:
+        config   (obj):  An instance of the config class. Used to get the log file name.
+        parser   (obj):  An instance of the parser class. Used in several places.
+        gatherer (obj):  An instance of the gather class. Used to get data from riots api.
+        logger   (obj):  An instance of the logger class. used to log info to a log file.
+        account_list (list: obj): A list of account class objects.
 
     """
 
     def __init__(self, source: str, max_game_index: int):
-        """ Instantiates instances of several other classes, stores the initial script_run row
-            and populates the account_list property.
+        """Instantiates instances of several other classes, stores the initial script_run row
+        and populates the account_list property.
 
-            Arguments:
-                source: The source of the script run. (Manual, Daily, Web, test, etc)
-                max_game_index: The max index of games we'll search to.
+        Arguments:
+            source: The source of the script run. (Manual, Daily, Web, test, etc)
+            max_game_index: The max index of games we'll search to.
         """
 
         self.parser = LolParser()
@@ -68,9 +68,11 @@ class LolData():
         self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))
 
         self.parser.store_run_info(source)
-        self.logger.log_info('\nScript is starting\n')
+        self.logger.log_info("\nScript is starting\n")
 
-        self.account_list = [LolAccount(acc_name) for acc_name in self.gatherer.accounts]
+        self.account_list = [
+            LolAccount(acc_name) for acc_name in self.gatherer.accounts
+        ]
 
     def run(self):
         """
@@ -85,30 +87,39 @@ class LolData():
 
         """
 
-        #pylint: disable=broad-except # this is by design, as I want every exception to be caught.
+        # pylint: disable=broad-except # this is by design, as I want every exception to be caught.
         try:
             for acc in self.account_list:
                 self.discover_new_matches(acc)
 
                 if not acc.new_user_matches:
-                    self.logger.log_info(f"No matches were found for {acc.account_name}")
+                    self.logger.log_info(
+                        f"No matches were found for {acc.account_name}"
+                    )
                     continue
 
                 self.store_new_match_data(acc)
 
-                self.logger.log_info(\
-                f"Added {len(acc.new_user_matches)} rows to match_data for {acc.account_name}")
+                self.logger.log_info(
+                    f"Added {len(acc.new_user_matches)} rows to match_data for {acc.account_name}"
+                )
 
-                self.logger.log_info(f"Adding {acc.account_name}'s new matches to team_data table.")
+                self.logger.log_info(
+                    f"Adding {acc.account_name}'s new matches to team_data table."
+                )
 
                 # get the matches already in the team_data, so we don't try to add those again.
-                previous_team_data_matches = self.parser.get_previous_team_data_match_ids()
+                previous_team_data_matches = (
+                    self.parser.get_previous_team_data_match_ids()
+                )
                 self.store_new_team_data(acc, previous_team_data_matches)
 
         # this line triggers the linter, but I think it has to stay, so...
         except Exception as exc:
             except_string = f"Except: {type(exc)} {str(exc)} {exc.__traceback__}"
-            self.parser.update_run_info("Failed", self.gatherer.match_id_list, except_string)
+            self.parser.update_run_info(
+                "Failed", self.gatherer.match_id_list, except_string
+            )
             self.logger.log_warning("Script run failed.\n")
             self.logger.log_warning(except_string)
             return
@@ -118,10 +129,10 @@ class LolData():
         return
 
     def discover_new_matches(self, acc: object):
-        """ Determines if there are new matches for our account to be stored.
+        """Determines if there are new matches for our account to be stored.
 
-            Args:
-                acc: An instance of the account class representing the player we're getting data for
+        Args:
+            acc: An instance of the account class representing the player we're getting data for
 
         """
         self.logger.log_info(f"Updating {acc.account_name}'s matches in match_data")
@@ -132,25 +143,28 @@ class LolData():
         recent_player_matches = {}
 
         for queue_type in LolAccount.match_types:
-            match_list_per_queue = self.gatherer.get_matches_list(acc.account_id,\
-                    queue_type)
+            match_list_per_queue = self.gatherer.get_matches_list(
+                acc.account_id, queue_type
+            )
 
             recent_player_matches[queue_type] = match_list_per_queue
 
         # gets a list of matches we've already stored for this player.
-        acc.previous_player_matches = self.parser.get_previous_player_match_data_ids(\
-                acc.account_name)
+        acc.previous_player_matches = self.parser.get_previous_player_match_data_ids(
+            acc.account_name
+        )
 
         # determines only the new matches we still need to save.
-        acc.new_user_matches = self.gatherer.get_unstored_match_ids(\
-                acc.previous_player_matches, recent_player_matches)
+        acc.new_user_matches = self.gatherer.get_unstored_match_ids(
+            acc.previous_player_matches, recent_player_matches
+        )
 
     def store_new_match_data(self, acc):
-        """ Makes the calls needed to the gatherer and parser to actually get and store data for a
-            match, for each match_id in acc.new_user_matches
+        """Makes the calls needed to the gatherer and parser to actually get and store data for a
+        match, for each match_id in acc.new_user_matches
 
-            Args:
-                acc: An instance of the account class representing the player we're getting data for
+        Args:
+            acc: An instance of the account class representing the player we're getting data for
 
         """
         for match in acc.new_user_matches:
@@ -169,16 +183,17 @@ class LolData():
                 match_data = self.gatherer.new_match_data[match]
 
             # Store the player data for this match into the player data table.
-            self.parser.insert_match_data_row(match_data, acc.account_name,\
-                    acc.account_id)
+            self.parser.insert_match_data_row(
+                match_data, acc.account_name, acc.account_id
+            )
 
     def store_new_team_data(self, acc, previous_team_data_matches: list):
-        """ Makes the calls needed to the gatherer and parser to actually get and store team data
-            for each match_id in acc.new_user_matches
+        """Makes the calls needed to the gatherer and parser to actually get and store team data
+        for each match_id in acc.new_user_matches
 
-            Args:
-                acc: An instance of the account class representing the player we're getting data for
-                previous_team_data_matches: All of the rows currently in the team data table.
+        Args:
+            acc: An instance of the account class representing the player we're getting data for
+            previous_team_data_matches: All of the rows currently in the team data table.
 
         """
         for match in acc.new_user_matches:
@@ -190,15 +205,17 @@ class LolData():
                 match_data = self.gatherer.new_match_data[match]
 
                 # and insert it into the team_data table.
-                self.parser.insert_team_data_row(match_data,\
-                        acc.account_name, acc.account_id)
+                self.parser.insert_team_data_row(
+                    match_data, acc.account_name, acc.account_id
+                )
 
             else:
                 # update the row instead of adding a new one.
                 self.parser.update_team_data_row(match, acc.account_name)
 
+
 if __name__ == "__main__":
-    MAX_INDEX = 200 # defaults to 200, can be overwritten.
+    MAX_INDEX = 200  # defaults to 200, can be overwritten.
 
     if len(sys.argv) < 2:
         print("Expected an argument denoting run 'source'. (Manual, test, etc)")

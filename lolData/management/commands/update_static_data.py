@@ -1,4 +1,3 @@
-
 import json
 import requests
 from django.core.management.base import BaseCommand
@@ -17,7 +16,9 @@ class Command(BaseCommand):
 
         latest_version = versions[0]
 
-        self.stdout.write(self.style.SUCCESS(f"Updating static data for patch {latest_version}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Updating static data for patch {latest_version}")
+        )
 
         self.store_champion_data([latest_version])
         self.store_item_data([latest_version])
@@ -33,20 +34,20 @@ class Command(BaseCommand):
             champs_url = f"http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json"
             res = requests.get(champs_url)
             champ_res = json.loads(res.text)
-            champ_data = champ_res['data']
+            champ_data = champ_res["data"]
 
             for champ in champ_data.values():
-                key = champ['key']
+                key = champ["key"]
 
                 if Champions.objects.filter(key=key).exists():
                     continue
 
                 Champions.objects.create(
                     key=key,
-                    id=champ['id'],
-                    name=champ['name'],
-                    title=champ['title'],
-                    blurb=champ['blurb']
+                    id=champ["id"],
+                    name=champ["name"],
+                    title=champ["title"],
+                    blurb=champ["blurb"],
                 )
 
     @transaction.atomic
@@ -54,16 +55,15 @@ class Command(BaseCommand):
         """Fetch and store item data."""
         for version in versions:
             self.stdout.write(f"Getting item data for patch {version}")
-            items_url = f"http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/item.json"
+            items_url = (
+                f"http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/item.json"
+            )
             res = requests.get(items_url)
             item_res = json.loads(res.text)
-            item_data = item_res['data']
+            item_data = item_res["data"]
 
             for key, details in item_data.items():
                 if Items.objects.filter(key=key).exists():
                     continue
 
-                Items.objects.create(
-                    key=key,
-                    name=details['name']
-                )
+                Items.objects.create(key=key, name=details["name"])

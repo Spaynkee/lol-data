@@ -1,3 +1,3 @@
 import os
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lolData.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lolData.settings")

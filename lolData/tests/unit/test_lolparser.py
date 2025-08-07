@@ -14,7 +14,7 @@ def test_store_puuid_existing_user_calls_save():
     mock_qs = MagicMock()
     mock_qs.first.return_value = mock_user
 
-    with patch('lolData.models.LeagueUsers.objects') as mock_objects:
+    with patch("lolData.models.LeagueUsers.objects") as mock_objects:
         mock_objects.filter.return_value = mock_qs
 
         parser = LolParser()
@@ -37,7 +37,7 @@ def test_store_puuid_no_user_does_nothing():
     mock_qs = MagicMock()
     mock_qs.first.return_value = None
 
-    with patch('lolData.models.LeagueUsers.objects') as mock_objects:
+    with patch("lolData.models.LeagueUsers.objects") as mock_objects:
         mock_objects.filter.return_value = mock_qs
 
         parser = LolParser()
@@ -62,7 +62,7 @@ def test_get_account_id_found_returns_puuid():
     mock_qs = MagicMock()
     mock_qs.first.return_value = mock_user
 
-    with patch('lolData.models.LeagueUsers.objects') as mock_objects:
+    with patch("lolData.models.LeagueUsers.objects") as mock_objects:
         mock_objects.filter.return_value = mock_qs
 
         parser = LolParser()
@@ -80,7 +80,7 @@ def test_get_account_id_not_found_returns_none():
     mock_qs = MagicMock()
     mock_qs.first.return_value = None
 
-    with patch('lolData.models.LeagueUsers.objects') as mock_objects:
+    with patch("lolData.models.LeagueUsers.objects") as mock_objects:
         mock_objects.filter.return_value = mock_qs
 
         parser = LolParser()

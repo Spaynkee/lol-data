@@ -1,4 +1,4 @@
-""" test_lolparser.py
+"""test_lolparser.py
 
 This test suite contains all currently written unit tests for the lolparser.py class.
 
@@ -20,12 +20,13 @@ load_dotenv()
 def api_key():
     return os.getenv("RIOT_API_KEY")
 
+
 @pytest.mark.django_db
 class TestLolGatherGetMatchesList:
     """Contains all the test cases for get_matches_list()."""
 
-    @patch('json.loads')
-    @patch('requests.get')
+    @patch("json.loads")
+    @patch("requests.get")
     def test_max_game_index_default(self, mock_requests, mock_json, api_key):
         """Tests that our function works with max_game_index = 200"""
         mock_json.return_value = ["1234"]  # avoiding the break statement
@@ -44,8 +45,8 @@ class TestLolGatherGetMatchesList:
             f"123/ids?start=100&queue=400&count=100&api_key={api_key}"
         )
 
-    @patch('json.loads')
-    @patch('requests.get')
+    @patch("json.loads")
+    @patch("requests.get")
     def test_max_game_index_fifty(self, mock_requests, mock_json, api_key):
         """Tests that our function works with max_game_index = 50"""
         gather = LolGather(50)
@@ -63,8 +64,8 @@ class TestLolGatherGetMatchesList:
 class TestLolGatherGetPuuid:
     """Contains all the test cases for get_puuid"""
 
-    @patch('json.loads')
-    @patch('requests.get')
+    @patch("json.loads")
+    @patch("requests.get")
     def test_get_puuid(self, mock_requests, mock_json, api_key):
         """Tests that we hit the correct endpoint for getting a players riot id."""
         gather = LolGather(100)
@@ -82,7 +83,7 @@ class TestLolGatherGetPuuid:
 class TestLolGatherGetMatchData:
     """Contains all the test cases for get_match_data"""
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_match_data(self, mock_requests, api_key):
         """Tests that we hit the correct endpoint for getting a players riot id."""
         gather = LolGather(100)
