@@ -12,12 +12,12 @@ python -m unittest discover resources/python/test
 """
 
 #pylint: disable=import-error #False positive.
-import unittest
+import pytest
 from unittest.mock import patch
-from resources.python.classes.lolgather import LolGather
-from resources.python.classes.lolconfig import LolConfig
+from classes import LolGather
+from classes import LolConfig 
 
-class TestLolGatherGetMatchesList(unittest.TestCase):
+class TestLolGatherGetMatchesList(pytest.TestCase):
     """ Contains all the test cases for get_matches_list().
     """
     def setUp(self):

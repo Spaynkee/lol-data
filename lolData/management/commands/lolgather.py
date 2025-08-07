@@ -6,11 +6,14 @@ to be able to gather league of legends data. It handles all API calls to the rio
 """
 import json
 import time
+import os
 from typing import Dict
 import requests
 from .lolparser import LolParser
 from .lollogger import LolLogger
-from .lolconfig import LolConfig
+from dotenv import load_dotenv
+
+load_dotenv()
 
 #pylint: disable=too-many-instance-attributes # This is okay.
 class LolGather():
@@ -23,7 +26,6 @@ class LolGather():
             _matches_url       (str): riot games api matches endpoint
             _match_url         (str): riot games api individual match endpoint
 
-            config             (obj): Config Class that does all our config stuff.
 
             accounts    (list: str): Holds a list of all accounts we collect data for
             match_id_list (list: str): Holds a list of games added this script run for logging
@@ -37,11 +39,11 @@ class LolGather():
         self.max_game_index = max_game_index
 
         self.lolparser = LolParser()
-        self.config = LolConfig()
         self.accounts = self.lolparser.get_summoner_names()
         self.new_match_data: Dict[int, Dict] = {}
         self.match_id_list = ""
-        self.logger = LolLogger(self.config.log_file_name)
+        self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))
+        self.api_key = os.getenv("RIOT_API_KEY")
 
     def get_matches_list(self, account_id: str, queue_type: int) -> list:
         """ Gets an individual account's recently played match ids.
@@ -68,7 +70,7 @@ class LolGather():
             try:
                 player_matches_response = requests.get(''.join([self._base_match_url,"by-puuid/",\
                         account_id, "/ids?start=", str(game_index), "&queue=", str(queue_type),\
-                        "&count=", str(index_increment), "&api_key=", self.config.api_key]),\
+                        "&count=", str(index_increment), "&api_key=", self.api_key]),\
                         timeout=200)
 
                 player_matches_response.raise_for_status()
@@ -116,7 +118,7 @@ class LolGather():
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
             matches_response = requests.get(''.join([self._base_match_url,\
-                    f"NA1_{str(match_id)}", "?api_key=", self.config.api_key]), timeout=200)
+                    f"NA1_{str(match_id)}", "?api_key=", self.api_key]), timeout=200)
 
             matches_response.raise_for_status()
             match_json = matches_response.json()
@@ -168,7 +170,7 @@ class LolGather():
 
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
-                    self.account_name_url, account_name, "?api_key=", self.config.api_key]),\
+                    self.account_name_url, account_name, "?api_key=", self.api_key]),\
                     timeout=200)
             account_response.raise_for_status()
             account_data = json.loads(account_response.text)
@@ -198,7 +200,7 @@ class LolGather():
             time.sleep(.08) # this should keep us around the 20 per 1 second limit.
 
             timeline_response = requests.get(''.join([self._base_match_url, f"NA1_{str(match_id)}",\
-                "/timeline", "?api_key=", self.config.api_key]), timeout=200)
+                "/timeline", "?api_key=", self.api_key]), timeout=200)
 
             timeline_response.raise_for_status()
             timeline_json = timeline_response.json()
@@ -224,7 +226,7 @@ class LolGather():
         """
         try:
             account_response = requests.get(''.join([self.base_summoner_url,\
-                    self.account_name_url, account_name, "?api_key=", self.config.api_key]),\
+                    self.account_name_url, account_name, "?api_key=", self.api_key]),\
                     timeout=200)
             account_response.raise_for_status()
             account_data = json.loads(account_response.text)

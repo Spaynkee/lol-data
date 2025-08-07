@@ -21,12 +21,12 @@ class LolDB():
     """
 
     def __init__(self, host, user, pw, name):
-        self.engine = db.create_engine(f"mysql+pymysql://{user}:{pw}@{host}/{name}?charset=utf8mb4"\
+        self.engine = db.create_engine(f"postgresql+psycopg2://{user}:{pw}@{host}/{name}"\
                 ,pool_size=100, max_overflow=100)
 
         self.connection = self.engine.connect()
-        self.metadata = db.MetaData(bind=self.engine)
-        self.metadata.reflect()
+        self.metadata = db.MetaData()
+        self.metadata.reflect(bind=self.engine)
 
         Session = db.orm.sessionmaker(bind=self.engine)
         self.session = Session()

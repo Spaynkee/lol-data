@@ -2,7 +2,7 @@ import unittest
 import json
 from collections import defaultdict
 from unittest.mock import Mock, MagicMock
-from resources.python.classes.lolparser import LolParser
+from classes import LolParser
 
 # This is being ignored in the build for now, as it needs more significant changes.
 class TestTeamDataInserted(unittest.TestCase):
@@ -13,7 +13,6 @@ class TestTeamDataInserted(unittest.TestCase):
         pass
 
     def test_with_data(self):
-        pass
         """ tests that data is parsed correctly. 
             
             This will test that we parse data out correctly, assuming we can get data from
@@ -51,9 +50,9 @@ class TestTeamDataInserted(unittest.TestCase):
         self.assertEqual(match_data_obj.assists, 7)
         self.assertEqual(match_data_obj.damage_to_champs, 24382)
         self.assertEqual(match_data_obj.damage_to_turrets, 2140)
-        self.assertEqual(match_data_obj.gold_per_minute, 493325.89285714284)
-        self.assertEqual(match_data_obj.creeps_per_minute, 5189.732142857143)
-        self.assertEqual(match_data_obj.xp_per_minute, 562901.7857142857)
+        self.assertEqual(match_data_obj.gold_per_minute, 493.32589285714284)
+        self.assertEqual(match_data_obj.creeps_per_minute, 5.189732142857142)
+        self.assertEqual(match_data_obj.xp_per_minute, 562.9017857142857)
         self.assertEqual(match_data_obj.wards_placed, 11)
         self.assertEqual(match_data_obj.vision_wards_bought, 1)
         self.assertEqual(match_data_obj.wards_killed, 2)

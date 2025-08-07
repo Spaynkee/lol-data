@@ -7,9 +7,16 @@
 
 import json
 import requests
+import os
+import django
+from django.db import transaction
+
+# Setup Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'lolData.settings')
+django.setup()
+
 from classes.lolconfig import LolConfig
-from classes.loldb import LolDB
-from classes.models import Champions, Items
+from lolData.models import Champions, Items
 
 #pylint: disable=C0103 # columns are named id, which makes the linter angry.
 #pylint: disable=W0622 # columns are named id, which makes the linter angry.
@@ -27,7 +34,6 @@ def main():
     """
 
     config = LolConfig()
-    our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
 
     version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
     version_res = requests.get(version_url)
@@ -35,17 +41,17 @@ def main():
 
     latest_version = versions[0]
 
-    store_champion_data([latest_version], our_db)
-    store_item_data([latest_version], our_db)
-    #store_item_data(versions, our_db) # If you want every item ever.
+    store_champion_data([latest_version])
+    store_item_data([latest_version])
+    #store_item_data(versions) # If you want every item ever.
 
 
-def store_champion_data(versions: list, our_db: object):
+@transaction.atomic
+def store_champion_data(versions: list):
     """ Gets and processes json data about champions from riot games.
 
         Args:
             versions: a list of versions we're getting data for. This is usually the latest version
-            our_db: An instance of the LolDB class so that we can actually store the data.
 
     """
     for version in versions:
@@ -59,7 +65,7 @@ def store_champion_data(versions: list, our_db: object):
         for champ in champ_data:
             key = champ_res['data'][champ]['key']
 
-            champ_check = our_db.session.query(Champions).filter(Champions.key==key).first()
+            champ_check = Champions.objects.filter(key=key).first()
             if champ_check:
                 # Champion is already in the table, so we can skip it.
                 continue
@@ -69,17 +75,20 @@ def store_champion_data(versions: list, our_db: object):
             title = champ_res['data'][champ]['title']
             blurb = champ_res['data'][champ]['blurb']
 
-            champ_obj = Champions(key, id, name, title, blurb)
-            our_db.session.add(champ_obj)
+            Champions.objects.create(
+                key=key,
+                id=id,
+                name=name,
+                title=title,
+                blurb=blurb
+            )
 
-        our_db.session.commit()
-
-def store_item_data(versions: list, our_db: object):
+@transaction.atomic
+def store_item_data(versions: list):
     """ Gets and processes json data about items from riot games.
 
         Args:
             versions: a list of versions we're getting data for. This is usually the latest version
-            our_db: An instance of the LolDB class so that we can actually store the data.
 
     """
     for version in versions:
@@ -90,14 +99,14 @@ def store_item_data(versions: list, our_db: object):
         item_data = item_res['data']
 
         for item in item_data:
-            item_check = our_db.session.query(Items).filter(Items.key==item).first()
+            item_check = Items.objects.filter(key=item).first()
             if item_check:
                 continue
 
-            item_obj = Items(item, item_res['data'][item]['name'])
-            our_db.session.add(item_obj)
-
-        our_db.session.commit()
+            Items.objects.create(
+                key=item,
+                name=item_res['data'][item]['name']
+            )
 
 if __name__ == "__main__":
     main()

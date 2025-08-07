@@ -14,11 +14,32 @@ Example:
 #pylint: disable=import-error # False positives
 import json
 import sys
-from classes.lolconfig import LolConfig
-from classes.lolparser import LolParser
-from classes.lolaccount import LolAccount
-from classes.lolgather import LolGather
-from classes.lollogger import LolLogger
+import os
+from dotenv import load_dotenv
+from .lolparser import LolParser
+from .lolaccount import LolAccount
+from .lolgather import LolGather
+from .lollogger import LolLogger
+
+load_dotenv()
+
+
+from django.core.management.base import BaseCommand
+
+class Command(BaseCommand):
+    help = "Your command description"
+
+    def add_arguments(self, parser):
+        parser.add_argument('source', type=str)
+        parser.add_argument('max_index', nargs='?', type=int, default=200)
+
+    def handle(self, *args, **options):
+        source = options['source']
+        max_index = options['max_index']
+
+        data = LolData(source, max_index)
+        data.run()
+
 
 class LolData():
     """ Makes use of several other classes to download and store league of legends data.
@@ -42,10 +63,9 @@ class LolData():
                 max_game_index: The max index of games we'll search to.
         """
 
-        self.config = LolConfig()
         self.parser = LolParser()
         self.gatherer = LolGather(max_game_index)
-        self.logger = LolLogger(self.config.log_file_name)
+        self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))
 
         self.parser.store_run_info(source)
         self.logger.log_info('\nScript is starting\n')

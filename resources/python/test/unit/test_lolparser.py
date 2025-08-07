@@ -14,7 +14,7 @@ python -m unittest resources.python.test.unit.test_lolparser
 #pylint: disable=duplicate-code # They're tests, it's fine
 import unittest
 from unittest.mock import Mock, MagicMock
-from resources.python.classes.lolparser import LolParser
+from classes import LolParser
 
 class TestLolParserGetFirstBloodKillAssist(unittest.TestCase):
     """ Contains all the test cases for get_first_blood_kill_assist().

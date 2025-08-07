@@ -34,3 +34,7 @@ yarn-debug.log*
 yarn-error.log*
 utils/db-sync.sh
 venv/
+instructions.txt
+__pycache__/
+.env
+test.log

@@ -13,7 +13,6 @@ import json
 import requests
 #pylint: disable=import-error # False positives
 from classes.loldb import LolDB
-from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
 from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, JsonData,\
         LeagueUsers, JsonTimeline
@@ -22,6 +21,7 @@ from classes.models import TeamData, MatchData, ScriptRuns, Champions, Items, Js
 #pylint: disable=W0104 # Dropping a collection isn't a useless statement.
 #pylint: disable=unreachable # safeguard from running in prod.
 #pylint: disable=too-many-statements # This is also okay.
+dns = "http://spaynkee.asuscomm.com"
 def main():
     """
         We make at least 7 requests to our public endpoints, and populate the db with that data.
@@ -31,10 +31,10 @@ def main():
     # we need to drop all the existing tables so we can re populate.
     config = LolConfig()
     our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
-    our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw, config.mongo_name)
+    # our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw, config.mongo_name)
 
-    for collection in our_mongo.db.list_collection_names():
-        our_mongo.db[collection].drop()
+    # for collection in our_mongo.db.list_collection_names():
+        # our_mongo.db[collection].drop()
 
     our_db.metadata.drop_all(our_db.engine)
     our_db.session.commit()
@@ -44,14 +44,14 @@ def main():
 
     print("Getting script runs")
     # script runs table.
-    my_script_run_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs",\
+    my_script_run_data = requests.get(f"{dns}/api/get_script_runs",\
             timeout=200)
     script_runs = json.loads(my_script_run_data.text)
     our_db.session.add_all([ScriptRuns(**run) for run in script_runs])
 
     print("getting team data")
     # team data table
-    my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data", timeout=200)
+    my_team_data = requests.get(f"{dns}/api/get_team_data", timeout=200)
     matches = json.loads(my_team_data.text)
     our_db.session.add_all([TeamData(**match) for match in matches])
 
@@ -64,52 +64,53 @@ def main():
 
     print("getting league users")
     #league_users table
-    my_league_user_data = requests.get("http://paulzplace.asuscomm.com/api/get_league_users",\
+    my_league_user_data = requests.get(f"{dns}/api/get_league_users",\
             timeout=200)
     league_users = json.loads(my_league_user_data.text)
     our_db.session.add_all([LeagueUsers(**user) for user in league_users])
 
     print("getting champions")
     #champions table
-    my_champion_data = requests.get("http://paulzplace.asuscomm.com/api/get_champions", timeout=200)
+    my_champion_data = requests.get(f"{dns}/api/get_champions", timeout=200)
     champions = json.loads(my_champion_data.text)
     our_db.session.add_all([Champions(**champ) for champ in champions])
 
     print("getting items")
     # items table
-    my_item_data = requests.get("http://paulzplace.asuscomm.com/api/get_items", timeout=200)
+    my_item_data = requests.get(f"{dns}/api/get_items", timeout=200)
     items = json.loads(my_item_data.text)
     our_db.session.add_all([Items(**item) for item in items])
 
-    print("getting json data. Big Oof")
-    my_json_data_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data",\
-            timeout=200)
+    # print("getting json data. Big Oof")
+    # my_json_data_data = requests.get(f"{dns}/api/get_json_data",\
+            # timeout=200)
 
-    json_data = json.loads(my_json_data_data.text)
+    # json_data = json.loads(my_json_data_data.text)
 
-    for row in json_data:
-        id = ""
+    # for row in json_data:
+        # id = ""
 
-        if 'gameId' in row:
-            id = row['gameId']
-        else:
-            id = row['metadata']['matchId'][4:]
+        # if 'gameId' in row:
+            # id = row['gameId']
+        # else:
+            # id = row['metadata']['matchId'][4:]
 
-        a_dict = {'_id': int(id),
-                'json_data': json.dumps(row)}
-        our_mongo.json.insert_one(a_dict)
+        # print(id)
+        # a_dict = {'_id': int(id),
+                # 'json_data': json.dumps(row)}
+        # our_mongo.json.insert_one(a_dict)
 
-    print("getting timeline json data. Biggest Oof")
-    my_timeline_json_data = requests.get(\
-            "http://paulzplace.asuscomm.com/api/get_timeline_json_data", timeout=400)
-    timeline_json_data = json.loads(my_timeline_json_data.text)
+    # print("getting timeline json data. Biggest Oof")
+    # my_timeline_json_data = requests.get(\
+            # f"{dns}/api/get_timeline_json_data", timeout=400)
+    # timeline_json_data = json.loads(my_timeline_json_data.text)
 
-    for row in timeline_json_data:
-        id = int(row['metadata']['matchId'][4:])
+    # for row in timeline_json_data:
+        # id = int(row['metadata']['matchId'][4:])
 
-        a_dict = {'_id': int(id),
-                'json_timeline': json.dumps(row)}
-        our_mongo.timeline_json.insert_one(a_dict)
+        # a_dict = {'_id': int(id),
+                # 'json_timeline': json.dumps(row)}
+        # our_mongo.timeline_json.insert_one(a_dict)
 
     our_db.session.commit()
 
@@ -125,6 +126,7 @@ def remove_win(user_data_list):
             user_data_list (list): a list of all of a players games
 
         Returns:
+        print(id)
             an updated list of all of a players games.
 
     """
@@ -146,9 +148,9 @@ def get_player_data(player: str) -> list:
 
     """
     return json.loads(requests.get(\
-            f"http://paulzplace.asuscomm.com/api/get_user_data?name={player}", timeout=200).text)
+            f"{dns}/api/get_user_data?name={player}", timeout=200).text)
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.
-    sys.exit()
+    # sys.exit()
     main()

@@ -5,14 +5,18 @@ data to or from our databases. It handles all db transactions during the script 
 
 """
 import time
+import os
+from dotenv import load_dotenv
 from typing import Tuple, Dict
 from datetime import datetime as date
-from .lolconfig import LolConfig
-from .loldb import LolDB
-from .lolmongo import LolMongo
+from django.db import transaction
 from .lollogger import LolLogger
-from .models import TeamData, MatchData, JsonData, Champions, Items, ScriptRuns, LeagueUsers,\
-        JsonTimeline
+from lolData.models import (
+    MatchData, TeamData, LeagueUsers, ScriptRuns, Champions, 
+    Items, JsonData, JsonTimeline
+)
+
+load_dotenv()
 
 #pylint: disable=too-many-public-methods # No way around this one right now. Maybe a refactor later
 class LolParser():
@@ -21,14 +25,7 @@ class LolParser():
     """
 
     def __init__(self):
-        self.config = LolConfig()
-        self.logger = LolLogger(self.config.log_file_name)
-
-        self.our_db = LolDB(self.config.db_host, self.config.db_user, self.config.db_pw,\
-                self.config.db_name)
-
-        self.mongodb = LolMongo(self.config.mongo_host, self.config.mongo_user,\
-                self.config.mongo_pw, self.config.mongo_name)
+        self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))
 
     def select_previous_match_data_rows(self, account_name: str) -> list:
         """ Gets the matches we already have in match_data and returns the match data as a list
@@ -41,7 +38,7 @@ class LolParser():
 
         """
 
-        return self.our_db.session.query(MatchData).filter_by(player=account_name).all()
+        return list(MatchData.objects.filter(player=account_name))
 
     def select_previous_team_data_rows(self) -> list:
         """ Gets the matches we already have in team_data and returns a list of row objects
@@ -50,7 +47,7 @@ class LolParser():
                 A list of team_data row objects
 
         """
-        return self.our_db.session.query(TeamData).all()
+        return list(TeamData.objects.all())
 
     def get_previous_team_data_match_ids(self) -> list:
         """ Creates and Returns a list of the match_ids already in team_data
@@ -84,6 +81,7 @@ class LolParser():
 
         return previous_player_matches
 
+    @transaction.atomic
     def insert_match_data_row(self, match_data: dict, account_name: str,\
             account_id: str):
 
@@ -139,9 +137,9 @@ class LolParser():
         match_obj.items = self.get_items(participant)
         match_obj.perks = self.get_perks(participant)
 
-        self.our_db.session.add(match_obj)
-        self.our_db.session.commit()
+        match_obj.save()
 
+    @transaction.atomic
     def insert_team_data_row(self, match_data: dict, account_name: str, account_id: str):
         """ Goes through a match_data dict, parses out information, and stores into team_data table
 
@@ -195,9 +193,9 @@ class LolParser():
         team_obj.start_time, team_obj.duration = self.get_start_time_and_duration(\
                 match_data['gameCreation'], match_data['gameDuration'])
 
-        self.our_db.session.add(team_obj)
-        self.our_db.session.commit()
+        team_obj.save()
 
+    @transaction.atomic
     def update_team_data_row(self, match: int, account_name: str):
         """ if the match we're trying to insert into team_data already exists, we update the
             participants field instead, since our current player was in the game with
@@ -209,12 +207,12 @@ class LolParser():
 
         """
 
-        existing_team_data_row = self.our_db.session.query(TeamData).filter_by(match_id=match).one()
+        existing_team_data_row = TeamData.objects.get(match_id=match)
 
         existing_team_data_row.participants = \
                 f"{existing_team_data_row.participants}, {account_name}"
 
-        self.our_db.session.commit()
+        existing_team_data_row.save()
 
     @staticmethod
     def get_participant_index(participant_identities: dict, puuid: str) -> int:
@@ -242,24 +240,23 @@ class LolParser():
                 A list of names stored in the league_users table
         """
 
-        league_users = self.our_db.session.query(LeagueUsers).all()
+        league_users = LeagueUsers.objects.all()
         return [user.summoner_name for user in league_users]
 
 
     def store_json_data(self, match: int, json_formatted_string: str):
-        """ Stores the json data for a single match into the json mongodb collection.
+        """ Stores the json data for a single match into the json_data table.
 
             Args:
                 match: The match id we're storing data for
                 json_formatted_string: The actual json data to be stored
         """
-        json_doc = self.mongodb.json.find_one({'_id': match})
-
-        if not json_doc:
-            insert_dict = {'_id': match, 'json_data': json_formatted_string}
-            self.mongodb.json.insert_one(insert_dict)
-
-        else:
+        json_obj, created = JsonData.objects.get_or_create(
+            match_id=match,
+            defaults={'json_data': json_formatted_string}
+        )
+        
+        if not created:
             self.logger.log_warning("Json already stored.")
 
     def store_json_timeline(self, match: int, json_formatted_string: str):
@@ -270,14 +267,15 @@ class LolParser():
                 json_formatted_string: The actual json data to be stored
         """
 
-        timeline_json_doc = self.mongodb.timeline_json.find_one({'_id': match})
-
-        if not timeline_json_doc:
-            insert_dict = {'_id': match, 'json_timeline': json_formatted_string}
-            self.mongodb.timeline_json.insert_one(insert_dict)
-        else:
+        timeline_obj, created = JsonTimeline.objects.get_or_create(
+            match_id=match,
+            defaults={'json_timeline': json_formatted_string}
+        )
+        
+        if not created:
             self.logger.log_warning("Json already stored for timeline.")
 
+    @transaction.atomic
     def store_run_info(self, source: str):
         """ Creates a new row in the script_runs table
 
@@ -285,10 +283,13 @@ class LolParser():
                 source: The source of the script run (Daily, Manual, ManualWeb)
         """
         time_started = date.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.our_db.session.add(\
-                ScriptRuns(source=source, start_time=time_started, status="Running"))
+        ScriptRuns.objects.create(
+            source=source, 
+            start_time=time_started, 
+            status="Running"
+        )
 
-
+    @transaction.atomic
     def update_run_info(self, status: str, matches: str, message: str):
         """ Updates the currently running row in script_runs
 
@@ -299,13 +300,13 @@ class LolParser():
 
         """
 
-        script_row = self.our_db.session.query(ScriptRuns).filter_by(status="Running").first()
+        script_row = ScriptRuns.objects.filter(status="Running").first()
         script_row.status = status
         script_row.message = message
         script_row.end_time = date.now().strftime("%Y-%m-%d %H:%M:%S")
         script_row.matches_added = matches
 
-        self.our_db.session.commit()
+        script_row.save()
 
     @staticmethod
     def get_gold_per_minute(participant: object, game_duration) -> int:
@@ -434,9 +435,9 @@ class LolParser():
 
         """
 
-        champion_row = self.our_db.session.query(Champions).filter_by(key=champ_id).first()
+        champion_row = Champions.objects.filter(key=champ_id).first()
 
-        if champion_row.key != -1:
+        if champion_row and champion_row.key != -1:
             return champion_row.name
 
         return "None"
@@ -500,8 +501,7 @@ class LolParser():
             if participant_stats[item] == 0:
                 continue
 
-            items_row = self.our_db.session.query(Items)\
-                    .filter_by(key=participant_stats[item]).first()
+            items_row = Items.objects.filter(key=participant_stats[item]).first()
 
             if items_row:
                 champ_items += f"{items_row.name}, "
@@ -599,11 +599,11 @@ class LolParser():
                 The puuid associated with this account from the database.
         """
 
-        user_row  = self.our_db.session.query(LeagueUsers).filter_by(\
-                summoner_name=account_name).first()
+        user_row = LeagueUsers.objects.filter(summoner_name=account_name).first()
 
-        return user_row.puuid
+        return user_row.puuid if user_row else None
 
+    @transaction.atomic
     def store_puuid(self, account_name: str, puuid: str):
         """ Stores a puuid into an league user row for a particiular account_name
 
@@ -612,13 +612,13 @@ class LolParser():
                 puuid:        the puuid we're storing.
 
         """
-        league_user = self.our_db.session.query(LeagueUsers).filter_by(\
-                summoner_name=account_name).first()
+        league_user = LeagueUsers.objects.filter(summoner_name=account_name).first()
 
-        league_user.puuid = puuid
+        if league_user:
+            league_user.puuid = puuid
+            league_user.save()
 
-        self.our_db.session.commit()
-
+    @transaction.atomic
     def store_league_user(self, account_data):
         """ Stores a puuid into an league user row for a particiular account_name
 
@@ -626,11 +626,8 @@ class LolParser():
                 account_data: Account data from riot games
 
         """
-        league_user = LeagueUsers()
-
-        league_user.puuid = account_data['puuid']
-        league_user.summoner_name = account_data['name']
-        league_user.riot_id = account_data['accountId']
-
-        self.our_db.session.add(league_user)
-        self.our_db.session.commit()
+        LeagueUsers.objects.create(
+            puuid=account_data['puuid'],
+            summoner_name=account_data['name'],
+            riot_id=account_data['accountId']
+        )

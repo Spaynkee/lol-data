@@ -15,7 +15,6 @@ import unittest
 import requests
 #pylint: disable=import-error # False positives
 from classes.loldb import LolDB
-from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
 from classes.models import TeamData, MatchData, ScriptRuns
 
@@ -34,13 +33,15 @@ class E2e(unittest.TestCase):
 
         """
         config = LolConfig()
+        
+        dns = "http://spaynkee.asuscomm.com"
 
         our_db = LolDB(config.db_host, config.db_user, config.db_pw, config.db_name)
         our_mongo = LolMongo(config.mongo_host, config.mongo_user, config.mongo_pw,\
                 config.mongo_name)
 
         # get team data from prod
-        my_team_data = requests.get("http://paulzplace.asuscomm.com/api/get_team_data", timeout=200)
+        my_team_data = requests.get(f"{dns}/api/get_team_data", timeout=200)
         prod_team_data = json.loads(my_team_data.text)
 
         # get team data from test
@@ -88,7 +89,7 @@ class E2e(unittest.TestCase):
         for user in users:
             print(f"Checking match_data for {user}")
             prod_user_data = json.loads(requests.get(\
-                f"http://paulzplace.asuscomm.com/api/get_user_data?name={user}", timeout=200).text)
+                f"{dns}/api/get_user_data?name={user}", timeout=200).text)
 
             test_user_data = our_db.session.query(MatchData).filter_by(player=user).order_by(\
                     MatchData.match_id.desc()).all()
@@ -146,13 +147,13 @@ class E2e(unittest.TestCase):
                 self.assertEqual(str(prod_user_data[i]['items']), str(test_user_data[i].items))
                 self.assertEqual(str(prod_user_data[i]['perks']), str(test_user_data[i].perks))
 
-        print("Checking json_data")
-        my_json_data = requests.get("http://paulzplace.asuscomm.com/api/get_json_data", timeout=200)
+        # print("Checking json_data")
+        # my_json_data = requests.get(f"{dns}/api/get_json_data", timeout=200)
 
-        prod_json_data = list(json.loads(my_json_data.text))
-        test_json_data = list(our_mongo.json.find().sort("_id", 1))
+        # prod_json_data = list(json.loads(my_json_data.text))
+        # test_json_data = list(our_mongo.json.find().sort("_id", 1))
 
-        self.assertEqual(len(prod_json_data), len(test_json_data))
+        # self.assertEqual(len(prod_json_data), len(test_json_data))
 
         #TODO: Eventually I want to verify the json exactly, but that's tricky right now.
 
@@ -175,22 +176,22 @@ class E2e(unittest.TestCase):
 
         #return
 
-        print("Checking timeline_data")
-        my_timeline_json_data = requests.get(\
-                "http://paulzplace.asuscomm.com/api/get_timeline_json_data",\
-                timeout=200)
+        # print("Checking timeline_data")
+        # my_timeline_json_data = requests.get(\
+                # f"{dns}/api/get_timeline_json_data",\
+                # timeout=200)
 
-        prod_timeline_json_data = list(json.loads(my_timeline_json_data.text))
-        test_timeline_json_data = list(our_mongo.timeline_json.find())
+        # prod_timeline_json_data = list(json.loads(my_timeline_json_data.text))
+        # test_timeline_json_data = list(our_mongo.timeline_json.find())
 
-        self.assertEqual(len(prod_timeline_json_data), len(test_timeline_json_data))
+        # self.assertEqual(len(prod_timeline_json_data), len(test_timeline_json_data))
 
         #for i in range(-21, 0):
         #    self.assertEqual(prod_timeline_json_data[i],\
         #            json.loads(test_timeline_json_data[i]['json_timeline']))
 
         print("Checking Script Runs")
-        my_runs_data = requests.get("http://paulzplace.asuscomm.com/api/get_script_runs",\
+        my_runs_data = requests.get(f"{dns}/api/get_script_runs",\
                 timeout=200)
         prod_run_data = json.loads(my_runs_data.text)
         test_run_data = our_db.session.query(ScriptRuns).all()
@@ -211,5 +212,5 @@ class E2e(unittest.TestCase):
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.
-    sys.exit()
+    # sys.exit()
     unittest.main()

@@ -10,12 +10,9 @@ To that end, this portion of the 'e2e' 'test' removes some data prior to running
 """
 #pylint: disable=import-error # False positives
 #pylint: disable=unreachable # We need this to prevent careless running on prod.
-import sys
 import unittest
 from classes.loldb import LolDB
-from classes.lolmongo import LolMongo
 from classes.lolconfig import LolConfig
-from classes.models import TeamData, MatchData, JsonData
 
 class RemoveDB(unittest.TestCase):
     """
@@ -78,8 +75,6 @@ class RemoveDB(unittest.TestCase):
         print("getting large timeline json...")
         current_timeline_data = list(our_mongo.timeline_json.find())
 
-            
-
         self.assertEqual(len(pre_team_data)-20, len(current_team_data))
         self.assertEqual(len(pre_match_data)-num_matches_removed, len(current_match_data))
         self.assertEqual(len(pre_json_data)-20, len(current_json_data))
@@ -89,5 +84,5 @@ class RemoveDB(unittest.TestCase):
 
 if __name__ == "__main__":
     # If you're gonna remove this exit, you better be in test. or else.
-    sys.exit()
+    # sys.exit()
     unittest.main()
