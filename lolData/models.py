@@ -22,7 +22,7 @@ class TeamData(models.Model):
     enemy_dragon_kills = models.IntegerField(null=True, blank=True)
     enemy_rift_herald_kills = models.IntegerField(null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)
-    duration = models.TimeField(null=True, blank=True)
+    duration = models.DurationField(null=True, blank=True)
 
     class Meta:
         db_table = "team_data"
