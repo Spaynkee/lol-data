@@ -29,10 +29,10 @@ jobs:
           pip install -e .
 
       - name: Run flake8
-        run: flake8 .
+        run: python -m flake8 .
 
       - name: Check black formatting
-        run: black --check .
+        run: python -m black --check .
 
       # - name: Run pytest tests (stop on first failure)
         # run: pytest lolData/tests/ -x --disable-warnings -q
