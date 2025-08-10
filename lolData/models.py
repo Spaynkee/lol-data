@@ -67,7 +67,7 @@ class MatchData(models.Model):
         return f"{self.player} - {self.champion_name} (Match {self.match_id})"
 
 
-class LeagueUsers(models.Model):
+class LeagueUser(models.Model):
     id = models.AutoField(primary_key=True)
     summoner_name = models.CharField(max_length=30, null=True, blank=True)
     riot_id = models.CharField(max_length=400, null=True, blank=True)
@@ -157,7 +157,7 @@ class JsonTimeline(models.Model):
         return f"Timeline Data for Match {self.match_id}"
 
 
-class Champions(models.Model):
+class Champion(models.Model):
     """Champions model for the champions table.
 
     Attributes:

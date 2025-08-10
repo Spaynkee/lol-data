@@ -15,9 +15,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from lolData.views.champion_views import ChampionViewSet
+from lolData.views.team_data_views import TeamDataViewSet
+from lolData.views.match_data_views import MatchDataViewSet
+from lolData.views.league_user_views import LeagueUserViewSet
+
+
+router = DefaultRouter()
+router.register(r"champions", ChampionViewSet, basename="champion")
+router.register(r"team_data", TeamDataViewSet, basename="team_data")
+router.register(r"match_data", MatchDataViewSet, basename="match_data")
+router.register(r"league_user", LeagueUserViewSet, basename="league_user")
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("api/", include(router.urls)),
 ]
