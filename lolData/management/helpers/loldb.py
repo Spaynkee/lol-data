@@ -27,7 +27,6 @@ class LolDB:
             pool_size=100,
             max_overflow=100,
         )
-
         self.connection = self.engine.connect()
         self.metadata = db.MetaData()
         self.metadata.reflect(bind=self.engine)
