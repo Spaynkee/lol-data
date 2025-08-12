@@ -18,6 +18,7 @@ class LolAccount:
         account_id        (str): the account_id of this account from riot
         previous_player_matches (list: int): the list of games we currently have for this acc
         new_match_data    (dict): Holds all of the actual match data for each match?
+        summoner_group   (int): The group of the summoner for data segregation
 
     """
 
@@ -29,9 +30,10 @@ class LolAccount:
         700,
     ]  # make sure this includes new types of matchmade games
 
-    def __init__(self, name):
+    def __init__(self, name, group):
         self.account_name = name
         self.new_user_matches = []
         self.account_id = None
         self.previous_player_matches = []
         self.new_match_data = {}
+        self.summoner_group = group

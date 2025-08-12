@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from lolData.models import LeagueUsers  # adjust if model lives elsewhere
+from lolData.models import LeagueUser
 from lolData.management.helpers.lolgather import (
     LolGather,
 )  # keeping your existing logic
@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         gather = LolGather()
 
-        users = LeagueUsers.objects.filter(puuid__isnull=True).values_list(
+        users = LeagueUser.objects.filter(puuid__isnull=True).values_list(
             "summoner_name", flat=True
         )
         total = users.count()
@@ -37,4 +37,4 @@ class Command(BaseCommand):
     @transaction.atomic
     def update_user_puuid(self, summoner_name, puuid):
         """Updates the PUUID for a given summoner name."""
-        LeagueUsers.objects.filter(summoner_name=summoner_name).update(puuid=puuid)
+        LeagueUser.objects.filter(summoner_name=summoner_name).update(puuid=puuid)

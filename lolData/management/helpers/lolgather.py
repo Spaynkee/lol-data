@@ -43,7 +43,7 @@ class LolGather:
         self.max_game_index = max_game_index
 
         self.lolparser = LolParser()
-        self.accounts = self.lolparser.get_summoner_names()
+        self.accounts = self.lolparser.get_summoners()
         self.new_match_data: Dict[int, Dict] = {}
         self.match_id_list = ""
         self.logger = LolLogger(os.getenv("LOG_FILE_NAME"))

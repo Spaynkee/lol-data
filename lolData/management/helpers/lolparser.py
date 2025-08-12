@@ -15,9 +15,9 @@ from .lollogger import LolLogger
 from lolData.models import (
     MatchData,
     TeamData,
-    LeagueUsers,
+    LeagueUser,
     ScriptRuns,
-    Champions,
+    Champion,
     Items,
     JsonData,
     JsonTimeline,
@@ -154,7 +154,7 @@ class LolParser:
 
     @transaction.atomic
     def insert_team_data_row(
-        self, match_data: dict, account_name: str, account_id: str
+        self, match_data: dict, account_name: str, account_id: str, summoner_group: int
     ):
         """Goes through a match_data dict, parses out information, and stores into team_data table
 
@@ -172,6 +172,7 @@ class LolParser:
         match_data = match_data["info"]
         # get some team information.
         team_obj.participants = account_name
+        team_obj.summoner_group = summoner_group
 
         if team_data["win"]:
             team_obj.win = "Win"
@@ -250,7 +251,7 @@ class LolParser:
 
         return -1
 
-    def get_summoner_names(self) -> list:
+    def get_summoners(self) -> list:
         """Creates and returns a list of summoner names that we have stored in the league_users
         table.
 
@@ -258,8 +259,8 @@ class LolParser:
             A list of names stored in the league_users table
         """
 
-        league_users = LeagueUsers.objects.all()
-        return [user.summoner_name for user in league_users]
+        league_users = LeagueUser.objects.all()
+        return league_users
 
     def store_json_data(self, match: int, json_formatted_string: str):
         """Stores the json data for a single match into the json_data table.
@@ -452,7 +453,7 @@ class LolParser:
 
         """
 
-        champion_row = Champions.objects.filter(key=champ_id).first()
+        champion_row = Champion.objects.filter(key=champ_id).first()
 
         if champion_row and champion_row.key != -1:
             return champion_row.name
@@ -622,7 +623,7 @@ class LolParser:
             The puuid associated with this account from the database.
         """
 
-        user_row = LeagueUsers.objects.filter(summoner_name=account_name).first()
+        user_row = LeagueUser.objects.filter(summoner_name=account_name).first()
 
         return user_row.puuid if user_row else None
 
@@ -635,7 +636,7 @@ class LolParser:
             puuid:        the puuid we're storing.
 
         """
-        league_user = LeagueUsers.objects.filter(summoner_name=account_name).first()
+        league_user = LeagueUser.objects.filter(summoner_name=account_name).first()
 
         if league_user:
             league_user.puuid = puuid
@@ -649,7 +650,7 @@ class LolParser:
             account_data: Account data from riot games
 
         """
-        LeagueUsers.objects.create(
+        LeagueUser.objects.create(
             puuid=account_data["puuid"],
             summoner_name=account_data["name"],
             riot_id=account_data["accountId"],

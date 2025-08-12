@@ -23,7 +23,7 @@ from classes.models import (
     Champions,
     Items,
     JsonData,
-    LeagueUsers,
+    LeagueUser,
     JsonTimeline,
 )
 
