@@ -23,6 +23,7 @@ class TeamData(models.Model):
     enemy_rift_herald_kills = models.IntegerField(null=True, blank=True)
     start_time = models.DateTimeField(null=True, blank=True)
     duration = models.DurationField(null=True, blank=True)
+    summoner_group = models.IntegerField(default=1)
 
     class Meta:
         db_table = "team_data"
@@ -72,6 +73,7 @@ class LeagueUser(models.Model):
     summoner_name = models.CharField(max_length=30, null=True, blank=True)
     riot_id = models.CharField(max_length=400, null=True, blank=True)
     puuid = models.CharField(max_length=400, null=True, blank=True)
+    summoner_group = models.CharField(default=1)
 
     class Meta:
         db_table = "league_users"

@@ -71,7 +71,8 @@ class LolData:
         self.logger.log_info("\nScript is starting\n")
 
         self.account_list = [
-            LolAccount(acc_name) for acc_name in self.gatherer.accounts
+            LolAccount(acc.summoner_name, acc.summoner_group)
+            for acc in self.gatherer.accounts
         ]
 
     def run(self):
@@ -206,7 +207,7 @@ class LolData:
 
                 # and insert it into the team_data table.
                 self.parser.insert_team_data_row(
-                    match_data, acc.account_name, acc.account_id
+                    match_data, acc.account_name, acc.account_id, acc.summoner_group
                 )
 
             else:

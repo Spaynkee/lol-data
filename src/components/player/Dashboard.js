@@ -8,7 +8,7 @@ import "bootstrap/dist/css/bootstrap.min.css"
 const Dashboard = (props) => {
     const [userData, setUserData] = useState(0);
 
-    let api_request = "/api/match_data?player=" + props.match.params.playerId;
+    let api_request = "/api/match_data/?player=" + props.match.params.playerId;
     //We need to do stuff when we have champ card data.
     //What we want to do is... call a function UpdateChampCards?
     //We have to create a champ card component
